@@ -1,0 +1,11 @@
+# env + large / regenerable data
+env/
+__pycache__/
+*.pyc
+data/ext/
+data/*.fits
+outputs/
+tests/logs/
+slurm/logs/
+figures/**/*.npz
+*.tmp

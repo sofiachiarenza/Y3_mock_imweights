@@ -1,0 +1,71 @@
+== 1. consistency
+north           npix=  98060  SFD/EBV_pixweight median=1.0018  corr=0.99976  | HI4PI vs spec HI: median ratio=1.0000 corr=0.99985
+south           npix= 187025  SFD/EBV_pixweight median=1.0015  corr=0.99966  | HI4PI vs spec HI: median ratio=1.0000 corr=0.99985
+des             npix=  94049  SFD/EBV_pixweight median=1.0015  corr=0.99972  | HI4PI vs spec HI: median ratio=1.0000 corr=0.99991
+des_photo-only  npix=  72266  SFD/EBV_pixweight median=1.0015  corr=0.99968
+photo_all       npix= 379134  SFD/EBV_pixweight median=1.0015  corr=0.99973  | HI4PI vs spec HI: median ratio=1.0000 corr=0.99986
+spec_footprint  npix= 254239  SFD/EBV_pixweight median=1.0015  corr=0.99972  | HI4PI vs spec HI: median ratio=1.0000 corr=0.99986
+photo_all_csfd_cosmo npix= 340675  SFD/EBV_pixweight median=1.0015  corr=0.99976  | HI4PI vs spec HI: median ratio=1.0000 corr=0.99991
+
+== 2. D = CSFD - SFD amplitude
+north           <SFD>=0.0355 rms(SFD)=0.0318  <D>=+0.0001 rms(D)=0.0006  rms(D)/rms(SFD)=0.020  corr(CSFD,SFD)=0.9998
+south           <SFD>=0.0534 rms(SFD)=0.0360  <D>=+0.0000 rms(D)=0.0006  rms(D)/rms(SFD)=0.017  corr(CSFD,SFD)=0.9999
+des             <SFD>=0.0271 rms(SFD)=0.0175  <D>=+0.0001 rms(D)=0.0006  rms(D)/rms(SFD)=0.036  corr(CSFD,SFD)=0.9994
+des_photo-only  <SFD>=0.0238 rms(SFD)=0.0149  <D>=+0.0001 rms(D)=0.0006  rms(D)/rms(SFD)=0.042  corr(CSFD,SFD)=0.9991
+photo_all       <SFD>=0.0422 rms(SFD)=0.0333  <D>=+0.0000 rms(D)=0.0006  rms(D)/rms(SFD)=0.019  corr(CSFD,SFD)=0.9998
+spec_footprint  <SFD>=0.0462 rms(SFD)=0.0331  <D>=+0.0000 rms(D)=0.0006  rms(D)/rms(SFD)=0.019  corr(CSFD,SFD)=0.9998
+photo_all_csfd_cosmo <SFD>=0.0400 rms(SFD)=0.0288  <D>=+0.0000 rms(D)=0.0006  rms(D)/rms(SFD)=0.020  corr(CSFD,SFD)=0.9998
+
+== 3. Pearson correlation with other templates
+-- north
+                STARDENS          HI  GALDEPTH_G  GALDEPTH_R  GALDEPTH_Z PSFDEPTH_W1   PSFSIZE_G   PSFSIZE_R   PSFSIZE_Z
+           D      -0.017      -0.031      -0.019      -0.012      -0.013       0.006       0.005      -0.002       0.001
+         SFD       0.651       0.906       0.084       0.066      -0.050      -0.113      -0.027       0.112       0.033
+        CSFD       0.651       0.906       0.084       0.066      -0.051      -0.113      -0.027       0.112       0.033
+-- south
+                STARDENS          HI  GALDEPTH_G  GALDEPTH_R  GALDEPTH_Z PSFDEPTH_W1   PSFSIZE_G   PSFSIZE_R   PSFSIZE_Z
+           D       0.027      -0.027      -0.012      -0.002      -0.011       0.014       0.005       0.002       0.007
+         SFD       0.328       0.855       0.041       0.008       0.016      -0.053       0.043       0.076       0.102
+        CSFD       0.328       0.855       0.041       0.008       0.016      -0.053       0.043       0.076       0.103
+-- des
+                STARDENS          HI  GALDEPTH_G  GALDEPTH_R  GALDEPTH_Z PSFDEPTH_W1   PSFSIZE_G   PSFSIZE_R   PSFSIZE_Z
+           D       0.006      -0.005      -0.004       0.000       0.007      -0.005       0.007       0.003      -0.022
+         SFD       0.394       0.917      -0.436      -0.320      -0.106      -0.056      -0.016      -0.056      -0.040
+        CSFD       0.395       0.918      -0.437      -0.320      -0.106      -0.056      -0.016      -0.056      -0.041
+-- des_photo-only
+                STARDENS          HI  GALDEPTH_G  GALDEPTH_R  GALDEPTH_Z PSFDEPTH_W1   PSFSIZE_G   PSFSIZE_R   PSFSIZE_Z
+           D       0.004      -0.008      -0.006      -0.001       0.012      -0.017       0.006      -0.014      -0.024
+         SFD       0.608       0.905      -0.407      -0.279      -0.168       0.188      -0.036      -0.006      -0.036
+        CSFD       0.609       0.906      -0.407      -0.279      -0.168       0.187      -0.036      -0.007      -0.037
+-- photo_all
+                STARDENS          HI  GALDEPTH_G  GALDEPTH_R  GALDEPTH_Z PSFDEPTH_W1   PSFSIZE_G   PSFSIZE_R   PSFSIZE_Z
+           D       0.009      -0.027      -0.003       0.003       0.002       0.013       0.011       0.006      -0.003
+         SFD       0.444       0.876      -0.189      -0.235      -0.230      -0.207      -0.031       0.056       0.191
+        CSFD       0.444       0.876      -0.189      -0.235      -0.231      -0.207      -0.031       0.056       0.191
+-- spec_footprint
+                STARDENS          HI  GALDEPTH_G  GALDEPTH_R  GALDEPTH_Z PSFDEPTH_W1   PSFSIZE_G   PSFSIZE_R   PSFSIZE_Z
+           D       0.009      -0.033      -0.016      -0.010      -0.008       0.009       0.013       0.009       0.001
+         SFD       0.378       0.877       0.124       0.019      -0.036      -0.196      -0.097       0.002       0.207
+        CSFD       0.379       0.878       0.124       0.019      -0.036      -0.196      -0.097       0.002       0.207
+-- photo_all_csfd_cosmo
+                STARDENS          HI  GALDEPTH_G  GALDEPTH_R  GALDEPTH_Z PSFDEPTH_W1   PSFSIZE_G   PSFSIZE_R   PSFSIZE_Z
+           D      -0.010      -0.033       0.007       0.010       0.012       0.012       0.004       0.002       0.002
+         SFD       0.492       0.906      -0.188      -0.236      -0.229      -0.212      -0.018       0.065       0.224
+        CSFD       0.492       0.906      -0.188      -0.236      -0.229      -0.212      -0.018       0.065       0.224
+
+== 4. pseudo-C_ell on photo_all
+saved dust_cl.png
+
+== 5. correlation coefficient with CMB lensing kappa
+-- planck_pr4: common npix=364759 (fsky=0.464)
+     ell bin      2-32     32-62     62-92    92-122   122-152   152-182   182-212   212-242   242-272   272-302   302-332   332-362   362-392   392-422   422-452   452-482   482-512   512-542   542-572   572-602   602-632   632-662   662-692   692-722   722-752
+      r(D,k)    -0.478    -0.473    -0.425    -0.359    -0.320    -0.276    -0.233    -0.183    -0.168    -0.152    -0.134    -0.119    -0.105    -0.112    -0.087    -0.080    -0.083    -0.064    -0.065    -0.063    -0.066    -0.057    -0.061    -0.044    -0.046
+    r(SFD,k)    -0.103     0.031     0.022     0.032     0.016     0.022     0.009     0.005     0.004     0.002     0.005     0.003    -0.012     0.017     0.002    -0.003     0.006     0.011     0.003     0.001     0.016     0.013     0.010     0.005    -0.011
+   r(CSFD,k)    -0.104     0.024     0.013     0.022     0.005     0.011    -0.002    -0.004    -0.005    -0.007    -0.004    -0.004    -0.019     0.010    -0.004    -0.009    -0.000     0.007    -0.001    -0.003     0.011     0.010     0.006     0.003    -0.013
+    r(LSS,k)     0.479     0.474     0.425     0.358     0.321     0.276     0.235     0.186     0.170     0.155     0.134     0.117     0.105     0.115     0.089     0.082     0.084     0.067     0.063     0.065     0.066     0.059     0.061     0.043     0.047
+-- act_dr6: common npix=157055 (fsky=0.200)
+     ell bin      2-32     32-62     62-92    92-122   122-152   152-182   182-212   212-242   242-272   272-302   302-332   332-362   362-392   392-422   422-452   452-482   482-512   512-542   542-572   572-602   602-632   632-662   662-692   692-722   722-752
+      r(D,k)    -0.597    -0.609    -0.522    -0.454    -0.450    -0.365    -0.326    -0.292    -0.275    -0.221    -0.213    -0.172    -0.161    -0.165    -0.136    -0.130    -0.137    -0.110    -0.119    -0.126    -0.121    -0.098    -0.089    -0.075    -0.070
+    r(SFD,k)     0.160     0.039     0.040    -0.010     0.007     0.043     0.041     0.039    -0.003    -0.004     0.038     0.011     0.010     0.019    -0.009     0.006    -0.008     0.016     0.026     0.019     0.008     0.015    -0.007     0.013     0.003
+   r(CSFD,k)     0.159     0.028     0.027    -0.025    -0.011     0.026     0.023     0.020    -0.022    -0.020     0.021    -0.002    -0.004     0.004    -0.023    -0.007    -0.023     0.005     0.013     0.006    -0.005     0.004    -0.016     0.005    -0.004
+    r(LSS,k)     0.598     0.610     0.522     0.454     0.450     0.364     0.330     0.297     0.277     0.226     0.215     0.174     0.159     0.171     0.136     0.134     0.137     0.111     0.116     0.125     0.122     0.100     0.086     0.072     0.074

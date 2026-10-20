@@ -1,0 +1,11 @@
+numpy>=2
+scipy
+astropy
+healpy
+h5py
+pyyaml
+tqdm
+matplotlib
+iminuit>=2.24
+jax
+pandas

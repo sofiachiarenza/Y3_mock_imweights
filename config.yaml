@@ -1,0 +1,79 @@
+# Y3 x CMB AMR -- imaging-systematics linear regression on the lognormal mocks.
+# See README.md for the rationale behind every map choice below.
+
+paths:
+  spec_mock_root: /lustre06/project/6033532/schiaren/LogNormal_Mocks        # <lensmap>/<T>/mock_simNNNN.fits + mock_randoms_<T>.h5
+  photo_mock_root: /lustre06/project/6033532/schiaren/2026-09-29            # same layout, photometric samples
+  spec_hpmaps_dir: /lustre06/project/6033532/schiaren/Y3_AMR/hpmaps         # DESI DA2 <SAMPLE>_mapprops_healpix_nested_nside256_{N,S}.fits + desi_ebv_lss_256.fits
+  pixweight: /lustre06/project/6033532/schiaren/Y3_AMR_nersc/photo_outputs/pixweight-1-dark.fits
+  ext_dir: data/ext                                                         # dustmaps data + HI4PI (relative to this folder)
+  photo_templates: data/photo_templates_nside256_nest.fits                  # built by build_dust_templates.py
+  output_root: outputs
+  figures: figures
+  kappa:
+    planck_pr4: /lustre06/project/6033532/schiaren/PNG_DR2/nersc_data/PR4_lensing/PR4_klm_dat_p.fits
+    planck_pr4_mask: /lustre06/project/6033532/schiaren/PNG_DR2/nersc_data/PR4_lensing/mask.fits.gz
+    act_dr6: /lustre06/project/6033532/schiaren/Y3_AMR/ACT_lensing/baseline/kappa_alm_data_act_dr6_lensing_v1_baseline.fits
+    galactic: {planck_pr4: true, act_dr6: false}   # DESI_Y3_x_CMB_AMR/configs/*_lensing_config.yaml
+    act_dr6_mask: /lustre06/project/6033532/schiaren/Y3_AMR/ACT_lensing/baseline/mask_act_dr6_lensing_v1_healpix_nside_4096_baseline.fits
+
+nside: 256
+nest: true
+hdu: 1
+sims:
+  act_dr6: [1, 100]       # inclusive
+  planck_pr4: [260, 359]
+nbins: 10
+tail: 0.5
+
+# --------------------------------------------------------------------------
+# Spectroscopic samples: DESI default map lists (verbatim from
+# Y3_AMR_nersc/{act,planck}_scripts/lin_regr_*.py, prepare_sysnet_ACT.py).
+# --------------------------------------------------------------------------
+spec:
+  lensmaps:
+    act_dr6: [BGS, LRG1, LRG2, LRG3, QSO, QSO1, QSO2]
+    planck_pr4: [LRG1, LRG2, LRG3, QSO]
+  png_dr2_qso_weights: /lustre06/project/6033532/schiaren/PNG_DR2/scripts/output/imaging_weights_lognormal/QSO
+  maps:
+    BGS: &bgs_maps [STARDENS, GALDEPTH_R, HI, EBV_DIFF_GR, EBV_DIFF_RZ]
+    LRG: &lrg_maps [EBV_DIFF_GR, EBV_DIFF_RZ, GALDEPTH_G, GALDEPTH_R, GALDEPTH_Z, HI,
+                    PSFDEPTH_W1, PSFSIZE_G, PSFSIZE_R, PSFSIZE_Z, STARDENS]
+    QSO: &qso_maps [EBV_DIFF_GR, EBV_DIFF_RZ, HI, PSFDEPTH_G, PSFDEPTH_R, PSFDEPTH_W1,
+                    PSFDEPTH_W2, PSFDEPTH_Z, PSFSIZE_G, PSFSIZE_R, PSFSIZE_Z, STARDENS]
+  tracers:
+    BGS:  {templates: BGS_BRIGHT, maps: *bgs_maps, zbins: [[0.1, 0.4]], regions: [N, S]}
+    LRG1: {templates: LRG, maps: *lrg_maps, zbins: [[0.4, 0.5], [0.5, 0.6]], regions: [N, S]}
+    LRG2: {templates: LRG, maps: *lrg_maps, zbins: [[0.6, 0.7], [0.7, 0.8]], regions: [N, S]}
+    LRG3: {templates: LRG, maps: *lrg_maps, zbins: [[0.8, 0.9], [0.9, 1.0], [1.0, 1.1]], regions: [N, S]}
+    QSO:  {templates: QSO, maps: *qso_maps, zbins: [[0.8, 1.3], [1.3, 2.1]], regions: [N, SnotDES, DES]}
+    QSO1: {templates: QSO, maps: *qso_maps, zbins: [[0.8, 1.3], [1.3, 1.6]], regions: [N, SnotDES, DES]}
+    QSO2: {templates: QSO, maps: *qso_maps, zbins: [[1.6, 2.1]], regions: [N, SnotDES, DES]}
+  # Variant: SFD reference inside EBV_DIFF swapped for CSFD
+  # (EBV_DIFF_XX_CSFD = EBV_DIFF_XX + SFD_pix - CSFD_pix).
+  variants:
+    WEIGHT_IMLIN: {}
+    WEIGHT_IMLIN_CSFD: {replace: {EBV_DIFF_GR: EBV_DIFF_GR_CSFD, EBV_DIFF_RZ: EBV_DIFF_RZ_CSFD}}
+
+# --------------------------------------------------------------------------
+# Photometric samples: no DESI default; built to mirror spec.
+# Regions north/south/des fitted separately (2026-09-29 mocks cover full DR9).
+# --------------------------------------------------------------------------
+photo:
+  lensmaps:
+    act_dr6: [BGS, LRG1, LRG2, LRG3]
+    planck_pr4: [BGS, LRG1, LRG2, LRG3]
+  regions: [north, south, des]
+  imaging_maps:
+    LRG: [GALDEPTH_G, GALDEPTH_R, GALDEPTH_Z, PSFDEPTH_W1, PSFSIZE_G, PSFSIZE_R, PSFSIZE_Z, STARDENS]
+    BGS: [GALDEPTH_G, GALDEPTH_R, GALDEPTH_Z, PSFSIZE_G, PSFSIZE_R, PSFSIZE_Z, STARDENS]
+  dust_baseline: [CSFD, HI]
+  # Variants: name -> {dust: [...]} or {maps: [...]} (full list override), optional tracers filter.
+  # Baseline CSFD+HI: CSFD-SFD (the CIB removed by CSFD) correlates with CMB kappa at r~-0.5
+  # (dust_map_check.py), so fitting SFD and CSFD together could remove kappa-correlated signal on data.
+  variants:
+    WEIGHT_IMLIN: {dust: [CSFD, HI]}                 # baseline
+    WEIGHT_IMLIN_SFDHI: {dust: [SFD, HI]}            # same with SFD
+    WEIGHT_IMLIN_CSFDSFDHI: {dust: [CSFD, SFD, HI]}  # both (spans the CIB direction)
+    WEIGHT_IMLIN_CSFDONLY: {dust: [CSFD]}            # previous photo choice
+    WEIGHT_IMLIN_SPECLIKE: {maps: [STARDENS, GALDEPTH_R, HI, CSFD], tracers: [BGS]}  # mirrors spec BGS
