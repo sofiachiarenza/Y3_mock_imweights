@@ -31,7 +31,6 @@ Sims: hdu 1, act_dr6 1–100, planck_pr4 260–359.
   |---|---|
   | `WEIGHT_IMLIN` | CSFD + HI (baseline) |
   | `_SFDHI` | SFD + HI |
-  | `_CSFDSFDHI` | CSFD + SFD + HI |
   | `_CSFDONLY` | CSFD (the previous photo choice) |
   | `_SPECLIKE` | BGS only: the spec BGS map list with CSFD |
 
@@ -42,6 +41,14 @@ Sims: hdu 1, act_dr6 1–100, planck_pr4 260–359.
 - **CSFD − SFD correlates with CMB lensing.** It is mostly the CIB removed from SFD, and it correlates with κ at r ≈ −0.5 (Planck PR4) and −0.6 (ACT DR6) for ℓ < 100, falling to about −0.2 at ℓ ~ 300.
   - A fit that spans this direction (SFD and CSFD together) can remove κ-correlated signal from the data.
   - The mocks can't detect this. It has to be tested on data, by comparing Cgκ across the dust variants.
+
+## Photo pilot (5 act_dr6 mocks/tracer, `figures/variants/*_pilot.txt`)
+
+- **SFD+HI vs CSFD+HI are identical on mocks.** Weight rms difference ≤ 8e-4. ⟨Cgg⟩ changes by < 0.1% for ℓ ≥ 10 and ≤ 0.7% at ℓ = 2–9. The SFD/CSFD choice is irrelevant for the mock mode-removal correction.
+- **CSFD+SFD+HI is degenerate.** The two maps are 0.9998 correlated, and the fit returns coefficients of about ±10 that effectively fit about 9×(SFD − CSFD), i.e. the CIB. The weights then differ from the baseline by 3–6% rms and *add* 1–4% power at all ℓ. This variant was dropped and should never be used.
+- **Mode removal by the baseline, ⟨C(baseline)⟩/⟨C(unweighted)⟩:** 0.75 (BGS) to 0.93 (LRG3) at ℓ = 2–5, 0.96–0.99 at ℓ = 10–19, and < 1% for ℓ ≥ 30.
+- **Spec-like BGS** (4 maps: STARDENS, GALDEPTH_R, HI, CSFD) removes about 15% less power at ℓ = 2–5 than the 9-map default (which adds GALDEPTH_G/Z and PSFSIZE_G/R/Z).
+- **Timing, all variants:** BGS about 11 min/mock, LRG 3–6 min/mock, 15 GB peak. Production runs as 10-sim array chunks (`slurm/regress_photo.sbatch`).
 
 ## Method notes
 
@@ -59,6 +66,7 @@ python build_randoms_cache.py --sample photo --tracer LRG1
 python regress_photo_mocks.py --tracer LRG1 --lensmap act_dr6 --sim-start 1 --sim-stop 100
 python compare_variants.py --sample photo --lensmap act_dr6 --tracers LRG1
 sbatch slurm/photo_pilot.sbatch 5                         # pilot: 5 mocks/tracer, all variants
+sbatch slurm/regress_photo.sbatch                         # production: 4 tracers x 2 lensmaps x 100 sims
 ```
 
 Run everything on compute nodes.

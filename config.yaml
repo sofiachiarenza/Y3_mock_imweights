@@ -71,9 +71,10 @@ photo:
   # Variants: name -> {dust: [...]} or {maps: [...]} (full list override), optional tracers filter.
   # Baseline CSFD+HI: CSFD-SFD (the CIB removed by CSFD) correlates with CMB kappa at r~-0.5
   # (dust_map_check.py), so fitting SFD and CSFD together could remove kappa-correlated signal on data.
+  # CSFD+SFD+HI was dropped after the pilot: SFD and CSFD are 0.9998 correlated, the fit is degenerate
+  # (coefficients ~ +-10) and the weights add 1-4% power at all ell (figures/variants/*_pilot.txt).
   variants:
     WEIGHT_IMLIN: {dust: [CSFD, HI]}                 # baseline
     WEIGHT_IMLIN_SFDHI: {dust: [SFD, HI]}            # same with SFD
-    WEIGHT_IMLIN_CSFDSFDHI: {dust: [CSFD, SFD, HI]}  # both (spans the CIB direction)
     WEIGHT_IMLIN_CSFDONLY: {dust: [CSFD]}            # previous photo choice
     WEIGHT_IMLIN_SPECLIKE: {maps: [STARDENS, GALDEPTH_R, HI, CSFD], tracers: [BGS]}  # mirrors spec BGS
