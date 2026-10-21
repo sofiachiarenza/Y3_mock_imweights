@@ -50,6 +50,15 @@ Sims: hdu 1, act_dr6 1–100, planck_pr4 260–359.
 - **Spec-like BGS** (4 maps: STARDENS, GALDEPTH_R, HI, CSFD) removes about 15% less power at ℓ = 2–5 than the 9-map default (which adds GALDEPTH_G/Z and PSFSIZE_G/R/Z).
 - **Timing, all variants:** BGS about 11 min/mock, LRG 3–6 min/mock, 15 GB peak. Production runs as 10-sim array chunks (`slurm/regress_photo.sbatch`).
 
+## Full 100-mock results (`figures/variants/<sample>_<lensmap>_<T>.txt`)
+
+These are shot-noise-subtracted pseudo-Cℓ at nside 256 over the full mock footprint. They are a diagnostic for comparing variants, not the analysis bandpowers.
+
+- **Dust choice is negligible.** Photo SFD+HI vs CSFD+HI, and spec CSFD-referenced EBV_DIFF vs the default, change ⟨Cgg⟩ by ≤ 0.05% at ℓ ≥ 10 and ≤ 0.3% at ℓ < 10, consistent with 1 within the errors. The rms weight difference is 5–11e-4.
+- **Photo mode removal** (baseline/unweighted, ℓ = 2–5 | 6–9 | 10–14): BGS 0.79–0.80 | 0.91 | 0.96; LRG1–3 0.80–0.87 | 0.90–0.93 | 0.96–0.98. It is below 1% for ℓ ≳ 30.
+- **Spec mode removal** is much milder: LRG 0.97–1.00 at ℓ < 20; QSO/QSO1/QSO2 within about 0.5–1% of 1.
+- **CSFD-only vs the CSFD+HI baseline:** up to about 3% differences at ℓ < 10 (HI removes a little more power). **Spec-like BGS** removes about 13% less power at ℓ = 2–5 than the 9-map photo default.
+
 ## Method notes
 
 - **Compressed randoms.** `LinearRegressor` takes its outlier cuts and bin edges from the data only, and every template is constant within a pixel. So the randoms are reduced, with no approximation, to one row per nside-256 pixel (per z-bin for spec) carrying the summed weight: about 750M rows become about 360k.
