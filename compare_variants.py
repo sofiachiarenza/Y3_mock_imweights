@@ -2,7 +2,7 @@
 
 Per tracer, over the requested sims, from the sidecars:
   * rms(w_variant - w_baseline) over weighted objects
-  * mean pseudo-C_ell^gg (nside 256, fsky-corrected, fixed mask = pixels with
+  * mean shot-noise-subtracted pseudo-C_ell^gg (nside 256, fsky-corrected, fixed mask = pixels with
     randoms >= 20% of the median) for the unweighted catalog and every variant
   * binned ratios <C_ell(variant)>/<C_ell(baseline)> and
     <C_ell(baseline)>/<C_ell(unweighted)> (the mode-removal effect), with the
@@ -35,10 +35,15 @@ def binned(cl):
 
 
 def cl_of(pix, w, R, mask):
+    """Shot-noise-subtracted pseudo-C_ell / fsky of delta = n_w / (alpha R) - 1.
+    Shot noise of a weighted count map: N = Omega_pix * <sum_i w_i^2 / nbar_p^2>_mask."""
     n = np.bincount(pix, weights=w, minlength=NPIX)
+    n2 = np.bincount(pix, weights=w * w, minlength=NPIX)
     alpha = n[mask].sum() / R[mask].sum()
-    delta = np.where(mask, n / np.where(mask, alpha * R, 1.0) - 1.0, 0.0)
-    return binned(hp.anafast(hp.reorder(delta, n2r=True), lmax=LMAX) / mask.mean())
+    nbar = np.where(mask, alpha * R, 1.0)
+    delta = np.where(mask, n / nbar - 1.0, 0.0)
+    shot = 4 * np.pi / NPIX * np.mean(n2[mask] / nbar[mask] ** 2)
+    return binned(hp.anafast(hp.reorder(delta, n2r=True), lmax=LMAX) / mask.mean() - shot)
 
 
 def main():
