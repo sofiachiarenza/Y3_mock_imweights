@@ -11,7 +11,8 @@
 #SBATCH --error=slurm/logs/spec_%A_%a.out
 # Spec production: 11 (tracer, lensmap) combos x 4 chunks of 25 sims (hdu 1).
 # Pilot timing (both variants): 45-133 s/mock, 11 GB peak -> <= ~1 h per task.
-# Submit from the repo root:  sbatch slurm/regress_spec.sbatch
+# Submit from the repo root:  sbatch slurm/regress_spec.sbatch [--variants V1 V2 ...]
+# (--skip-existing appends only the variants missing from existing sidecars)
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 COMBOS=(BGS:act_dr6 LRG1:act_dr6 LRG2:act_dr6 LRG3:act_dr6 QSO:act_dr6 QSO1:act_dr6 QSO2:act_dr6
@@ -24,4 +25,4 @@ START=$(( FIRST + (ID % 4) * 25 ))
 STOP=$(( START + 24 ))
 echo "task $ID: $T $L sims $START-$STOP"
 env/bin/python -u regress_spec_mocks.py --tracer "$T" --lensmap "$L" \
-    --sim-start "$START" --sim-stop "$STOP" --skip-existing
+    --sim-start "$START" --sim-stop "$STOP" --skip-existing "$@"

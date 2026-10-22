@@ -23,8 +23,8 @@ import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 
-from common import (load_config, load_randoms_cache, mock_path, photsys_of_pix, radec_to_pix, sidecar_path,
-                    sim_ids, spec_randoms_table, spec_region_masks, write_sidecar)
+from common import (append_sidecar, existing_columns, load_config, load_randoms_cache, mock_path, photsys_of_pix,
+                    radec_to_pix, sidecar_path, sim_ids, spec_randoms_table, spec_region_masks, write_sidecar)
 from produce_imweights import get_debv, produce_imweights
 
 log = logging.getLogger("regress_spec")
@@ -41,6 +41,7 @@ def build_templates(cfg, tracer):
     out = {}
     for reg in ("N", "S"):
         t = Table.read(os.path.join(hpdir, f"{prefix}_mapprops_healpix_nested_nside256_{reg}.fits"))
+        t["CSFD"] = np.asarray(dust["CSFD"], float)
         for ec in ("GR", "RZ"):
             t[f"EBV_DIFF_{ec}_CSFD"] = np.asarray(debv[f"EBV_DIFF_{ec}"], float) + shift
         out[reg] = t
@@ -48,9 +49,12 @@ def build_templates(cfg, tracer):
 
 
 def variant_maps(cfg, tracer, variant):
-    maps = list(cfg["spec"]["tracers"][tracer]["maps"])
-    rep = cfg["spec"]["variants"][variant].get("replace", {})
-    return [rep.get(m, m) for m in maps]
+    """Tracer's DESI map list with the variant's replace -> drop -> add applied."""
+    v = cfg["spec"]["variants"][variant]
+    rep = v.get("replace", {})
+    maps = [rep.get(m, m) for m in cfg["spec"]["tracers"][tracer]["maps"]]
+    maps = [m for m in maps if m not in v.get("drop", [])]
+    return maps + [m for m in v.get("add", []) if m not in maps]
 
 
 def read_coeffs(directory):
@@ -111,7 +115,9 @@ def main():
     p.add_argument("--hdu", type=int, default=None)
     p.add_argument("--variants", nargs="+", default=None)
     p.add_argument("--output-root", default=None, help="override (tests)")
-    p.add_argument("--skip-existing", action="store_true")
+    p.add_argument("--skip-existing", action="store_true",
+                   help="skip sims whose sidecar already has every requested variant; if the sidecar exists "
+                        "but lacks some, fit only those and append them")
     args = p.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -128,13 +134,20 @@ def main():
 
     for sim in sim_ids(cfg, args.lensmap, args.sim_start, args.sim_stop):
         out = sidecar_path(cfg, "spec", args.lensmap, args.tracer, sim, hdu)
+        todo, append = variants, False
         if args.skip_existing and os.path.exists(out):
-            continue
+            todo = [v for v in variants if v not in existing_columns(out)]
+            if not todo:
+                continue
+            append = True
         t0 = time.time()
         data = read_mock(mock_path(cfg, "spec", args.lensmap, args.tracer, sim), hdu)
-        weights, coeffs = regress_catalog(cfg, args.tracer, data, templates, randoms, variants)
-        write_sidecar(out, len(data), weights, coeffs,
-                      {"sample": "spec", "tracer": args.tracer, "lensmap": args.lensmap, "sim": sim, "hdu": hdu})
+        weights, coeffs = regress_catalog(cfg, args.tracer, data, templates, randoms, todo)
+        if append:
+            append_sidecar(out, len(data), weights, coeffs)
+        else:
+            write_sidecar(out, len(data), weights, coeffs,
+                          {"sample": "spec", "tracer": args.tracer, "lensmap": args.lensmap, "sim": sim, "hdu": hdu})
         log.info("%s %s sim %d: N=%d, %.1fs -> %s", args.tracer, args.lensmap, sim, len(data), time.time() - t0, out)
 
 

@@ -175,6 +175,30 @@ def sidecar_path(cfg, sample, lensmap, tracer, sim, hdu):
     return os.path.join(cfg["paths"]["output_root"], sample, lensmap, tracer, f"mock_sim{sim:04d}_hdu{hdu}.h5")
 
 
+def existing_columns(path):
+    with h5py.File(path, "r") as f:
+        return {k for k in f.keys() if k.startswith("WEIGHT")}
+
+
+def append_sidecar(path, nrows, weights, coeffs):
+    """Add new weight columns (+ coeffs) to an existing sidecar; written to a copy then swapped in."""
+    import shutil
+    tmp = path + ".tmp"
+    shutil.copyfile(path, tmp)
+    with h5py.File(tmp, "a") as f:
+        assert int(f.attrs["NROWS"]) == nrows, (path, f.attrs["NROWS"], nrows)
+        for col, w in weights.items():
+            assert len(w) == nrows and col not in f, col
+            f.create_dataset(col, data=np.asarray(w, "f8"), compression="gzip")
+        for variant, fits_ in coeffs.items():
+            gv = f["coeffs"].create_group(variant)
+            for key, pars in fits_.items():
+                gk = gv.create_group(key)
+                for par, val in pars.items():
+                    gk.attrs[par] = float(val)
+    os.replace(tmp, path)
+
+
 def write_sidecar(path, nrows, weights, coeffs, meta):
     """weights: {column: full-HDU-length array}; coeffs: {variant: {key: {par: value}}}."""
     os.makedirs(os.path.dirname(path), exist_ok=True)

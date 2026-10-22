@@ -54,6 +54,10 @@ spec:
   variants:
     WEIGHT_IMLIN: {}
     WEIGHT_IMLIN_CSFD: {replace: {EBV_DIFF_GR: EBV_DIFF_GR_CSFD, EBV_DIFF_RZ: EBV_DIFF_RZ_CSFD}}
+    # photo-style dust block (CSFD + HI instead of EBV_DIFF): like-for-like with the photo default
+    WEIGHT_IMLIN_CSFDHI: {drop: [EBV_DIFF_GR, EBV_DIFF_RZ], add: [CSFD]}
+    WEIGHT_IMLIN_NOHI: {drop: [HI]}
+  # variant keys: replace {old: new}, drop [..], add [..] (applied in that order to the tracer's map list)
 
 # --------------------------------------------------------------------------
 # Photometric samples: no DESI default; built to mirror spec.
