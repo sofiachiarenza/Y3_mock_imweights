@@ -61,8 +61,12 @@ These are shot-noise-subtracted pseudo-Cℓ at nside 256 over the full mock foot
 
 - **Dust choice is negligible.** Photo SFD+HI vs CSFD+HI, and spec CSFD-referenced EBV_DIFF vs the default, change ⟨Cgg⟩ by ≤ 0.05% at ℓ ≥ 10 and ≤ 0.4% at ℓ < 10, consistent with 1 within the errors. The rms weight difference is 5–11e-4.
 - **Photo mode removal** (baseline/unweighted, ℓ = 2–5 | 6–9 | 10–14): BGS 0.79–0.80 | 0.91 | 0.96; LRG1–3 0.80–0.87 | 0.90–0.93 | 0.96–0.98. It is below 1% for ℓ ≳ 30.
-- **Spec mode removal** is much milder: LRG 0.97–1.00 at ℓ < 20; QSO/QSO1/QSO2 within about 0.5–1% of 1.
-- **Spec BGS with the DESI 3-map default** (rerun 2026-10-26, act_dr6, 100 mocks): baseline/unweighted is 0.989 ± 0.004 (ℓ = 2–5), 0.970 ± 0.005 (6–9), 0.986 ± 0.002 (10–14) and 0.989 ± 0.002 (15–19), and ≤ 0.3% at ℓ ≥ 20. The old 5-map list (now `WEIGHT_IMLIN_ALLEBV`) removed 0.5–1.4% more at ℓ < 20 (ALLEBV/baseline 0.986–0.997).
+- **Spec mode removal** (corrected 2026-10-26, see the note below; ratio of means ⟨C(baseline)⟩/⟨C(unweighted)⟩, both lensmaps agree), ℓ = 2–5 | 6–9 | 10–14 | 15–19:
+  - BGS (DESI 3-map default): 0.89 | 0.95 | 0.98 | 0.99, ≤ 0.3% at ℓ ≥ 20.
+  - LRG1–3: 0.73–0.80 | 0.88–0.90 | 0.95–0.96 | 0.97–0.98, ≤ 1.3% at ℓ ≥ 20. Similar to photo.
+  - QSO, QSO1, QSO2: undefined at ℓ = 2–5 (the mean mock QSO Cgg is ≈ 0 there after shot-noise subtraction, as also found in PNG_DR2) | 0.58–0.65 | 0.84–0.90 | 0.92–0.96, ≤ 3% at ℓ ≥ 20.
+  - The old 5-map BGS list (now `WEIGHT_IMLIN_ALLEBV`) removes more: ALLEBV/baseline 0.93 (ℓ = 2–5), 0.98 (6–9), 0.99 (10–14).
+- **Bug fixed 2026-10-26 (spec only):** `compare_variants.py` gave the spec mock objects unit weight while the spec randoms cache is weighted WEIGHT·FKP/SYS/ZFAIL. The completeness/FKP pattern then entered δ as spurious large-scale power (QSO Cgg at ℓ = 2–5: 444e-6 instead of ≈ 1e-6; LRG1 7× too high), which pushed every spec ratio towards 1. The objects now carry the same weight and z cut as the randoms. The regression weights and sidecars were never affected (produce_imweights weights the objects itself), nor were photo (unit-weight randoms) or any real-data result. The earlier spec numbers (LRG 0.97–1.00, QSO ≈ 1, BGS 0.989/0.970) are wrong; the old outputs are in `figures/variants/old_unitweight_20261026/`.
 - **CSFD-only vs the CSFD+HI baseline:** up to about 3% differences at ℓ < 10 (HI removes a little more power). **Spec-like BGS** removes about 13% less power at ℓ = 2–5 than the 9-map photo default.
 - **Spec dust-block variants** (added 2026-10-22, appended to the existing sidecars):
 
@@ -71,8 +75,10 @@ These are shot-noise-subtracted pseudo-Cℓ at nside 256 over the full mock foot
   | `WEIGHT_IMLIN_CSFDHI` | CSFD + HI in place of EBV_DIFF_GR/RZ, the photo-style dust block (like-for-like with photo) |
   | `WEIGHT_IMLIN_NOHI` | the DESI default without HI |
 
-  - **CSFD+HI vs the default** (mean over 100 mocks; σ is the error on that mean): ⟨Cgg⟩ is 0.5–1.5% *higher* for LRG and BGS at ℓ < 30. The largest shift is act_dr6 LRG2 at ℓ = 10–14 (1.0153 ± 0.0030). For ℓ ≥ 30 the change is ≤ 0.5%. QSO and LRG3 change by ≤ 0.6%. The weights differ by 6–10e-3 rms, ten times more than in the SFD↔CSFD swap. On mocks, EBV_DIFF therefore removes slightly more power than a directly fitted CSFD.
-  - **No HI vs the default:** ≤ 1% at ℓ < 30 (largest: act_dr6 BGS at ℓ = 6–9, 1.010 ± 0.003) and ≤ 0.13% at ℓ ≥ 30. The weights differ by 4–7e-3 rms.
+  - Numbers below are corrected (2026-10-26 fix above); ratio of means over 100 mocks.
+  - **CSFD+HI vs the default:** ⟨Cgg⟩ is *higher*: LRG 1.04–1.11 at ℓ = 2–5, 1.01–1.03 at 6–9, ≤ 2% at ℓ ≥ 10; QSO 1.09–1.15 at ℓ = 6–9 and 1.03–1.06 at 10–14; BGS ≤ 1%. ≤ 1% for all at ℓ ≥ 30. The weights differ by 6–10e-3 rms, ten times more than in the SFD↔CSFD swap. On mocks, EBV_DIFF therefore removes more power than a directly fitted CSFD.
+  - **EBV_DIFF re-referenced to CSFD vs the default:** ≤ 0.3% at ℓ < 10 and ≤ 0.15% at ℓ ≥ 10.
+  - **No HI vs the default:** ≤ 3% at ℓ < 10 for BGS and LRG, ≤ 2.5% for QSO at ℓ = 10–19, ≤ 0.2% at ℓ ≥ 30. The weights differ by 4–7e-3 rms.
   - Both shifts are small next to the mode-removal correction itself, but unlike the SFD↔CSFD swap they are not negligible at ℓ < 30.
 
 ## Test 2: CSFD − SFD vs an independent CIB (`cib_check.py`, `figures/cib_check.{txt,png}`)
@@ -109,6 +115,13 @@ Inputs and method:
 - BGS + EBV_DIFF (`_ALLEBV`) lowers Cgκ by 3%.
 - The sign is the same everywhere, which suggests the DESI EBV_DIFF (which contains −(SFD's CIB)) takes out ~1% of the κ correlation. Every shift is ≤ 0.2σ per bin.
 - Dropping HI (`_NOHI`) changes Cgκ by ≤ 0.5%.
+
+**Cgg and the map choice (`TESTS_SUMMARY.ipynb` B3).** Each data ratio C(variant)/C(baseline) is compared with the same ratio over the 100 act_dr6 mocks (no contamination: shows the shift from fitting noise) and with the single-sky statistical error σ_C on Cgg.
+- **The weights remove real contamination.** Data baseline/unweighted is far below the mock mode removal at ℓ < 20 (e.g. spec QSO 0.17–0.22 on data vs 0.61–0.84 on mocks at ℓ = 6–14).
+- **The dust choice does not matter for Cgg.** SFD↔CSFD (photo `_SFDHI`, spec `_CSFD`) shifts are outside the (tiny) mock spread, so they respond to the real sky, but they are ≤ 0.9 σ_C at ℓ = 2–9 and ≤ 0.12 σ_C at ℓ = 10–29. CSFD-only and the spec CSFD+HI block are within the mock spread.
+- **HI matters at low ℓ.** Dropping HI raises data Cgg well beyond the mocks: QSO 1.64 at ℓ = 2–9 (5 σ_C) and 1.12–1.14 at ℓ = 10–29 (z ≈ 4), BGS 1.31 at ℓ = 2–9 (2.3 σ_C). HI is removing real contamination; keep it.
+- **CSFD + SFD + HI** removes 10–15% of Cgg at ℓ = 10–29 (1.2–2.2 σ_C), consistent with its Cgκ loss.
+- The official QSO2 weight gives 1.17–1.18× the refit Cgg (≈ 1 σ_C at ℓ < 10): the official QSO1/QSO2 weight is the full-QSO fit.
 
 **Test 3, Euclid-style (C. Daley, Euclid CMBX KP2-3, 22 Oct 2026, slide 13): galaxy × extinction is the CIB in the template; CSFD removes it.**
 - Test: if a template X = dust + α·CIB and the dust does not correlate with the tracer, then r(g, X) = r(g, CIB)·r(CIB, X) band by band, with nothing fitted. The CIB auto is the noise-free odd × even half-ring cross, as in Euclid. The full-mission auto is ≥ 99% signal at 857 GHz for ℓ < 768, so this changes the prediction by < 1% there.

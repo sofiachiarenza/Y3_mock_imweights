@@ -7,7 +7,8 @@ Per tracer, over the requested sims, from the sidecars:
   * binned ratios <C_ell(variant)>/<C_ell(baseline)> and
     <C_ell(baseline)>/<C_ell(unweighted)> (the mode-removal effect), with the
     scatter of the per-mock ratio / sqrt(N_sims) as the error on the mean ratio.
-Uses only the imaging weight (relative comparison; other weights cancel).
+Spec objects carry WEIGHT*FKP/SYS/ZFAIL and the zbins cut, matching the randoms cache; photo
+objects and randoms are unweighted. The variants then differ only in the imaging weight.
 
     python compare_variants.py --sample photo --lensmap act_dr6 --tracers LRG1 --sim-start 1 --sim-stop 5
 """
@@ -23,7 +24,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from astropy.io import fits
 
-from common import NPIX, NSIDE, load_config, load_randoms_cache, mock_path, radec_to_pix, sidecar_path, sim_ids
+from common import (NPIX, NSIDE, load_config, load_randoms_cache, mock_path, radec_to_pix, sidecar_path, sim_ids,
+                    spec_random_weight)
 
 LMAX = 3 * NSIDE - 1
 EDGES = np.array([2, 6, 10, 15, 20, 30, 45, 60, 90, 130, 200, 300, 450, 600, LMAX + 1])
@@ -74,13 +76,25 @@ def main():
                 if os.path.exists(sidecar_path(cfg, args.sample, args.lensmap, tracer, s, hdu))]
         for sim in sims:
             with fits.open(mock_path(cfg, args.sample, args.lensmap, tracer, sim), memmap=True) as h:
-                pix = radec_to_pix(h[hdu].data["RA"], h[hdu].data["DEC"])
+                d = h[hdu].data
+                pix = radec_to_pix(d["RA"], d["DEC"])
+                if args.sample == "spec":
+                    # the spec randoms cache is weighted WEIGHT*FKP/SYS/ZFAIL and covers only the zbins,
+                    # so the objects get the same weight and z range (unit weights gave a spurious
+                    # large-scale power from the completeness/FKP pattern: 100-300x at l < 10 for QSO)
+                    zb = cfg["spec"]["tracers"][tracer]["zbins"]
+                    wobj = np.asarray(spec_random_weight(d), float)
+                    sel = (d["Z"] >= zb[0][0]) & (d["Z"] < zb[-1][1])
+                else:
+                    wobj, sel = np.ones(len(pix)), np.ones(len(pix), bool)
             with h5py.File(sidecar_path(cfg, args.sample, args.lensmap, tracer, sim, hdu), "r") as f:
                 cols = [k for k in f.keys() if k.startswith("WEIGHT")]
                 ws = {k: f[k][:] for k in cols}
-            cls.setdefault("UNWEIGHTED", []).append(cl_of(pix, np.ones(len(pix)), R, mask))
+            pix, wobj = pix[sel], wobj[sel]
+            ws = {k: w[sel] for k, w in ws.items()}
+            cls.setdefault("UNWEIGHTED", []).append(cl_of(pix, wobj, R, mask))
             for k, w in ws.items():
-                cls.setdefault(k, []).append(cl_of(pix, w, R, mask))
+                cls.setdefault(k, []).append(cl_of(pix, wobj * w, R, mask))
                 if "WEIGHT_IMLIN" in ws and k != "WEIGHT_IMLIN":
                     sel = ws["WEIGHT_IMLIN"] != 1
                     dw.setdefault(k, []).append(np.std(w[sel] - ws["WEIGHT_IMLIN"][sel]))

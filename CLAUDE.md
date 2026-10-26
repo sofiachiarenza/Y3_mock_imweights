@@ -24,6 +24,8 @@ Done, all on Narval:
 - The photo baseline is safe. CSFD+SFD+HI wipes out 46–73% of Cgκ.
 - On spec, EBV_DIFF costs ~1% of Cgκ.
 - Spec BGS switched to the DESI 3-map default (STARDENS, GALDEPTH_R, HI). The old 5-map list is now the variant `WEIGHT_IMLIN_ALLEBV`.
+- **Spec mock Cgg bug fixed (2026-10-26):** `compare_variants.py` gave spec mock objects unit weight against WEIGHT·FKP/SYS/ZFAIL-weighted randoms, adding spurious large-scale power and pushing every spec ratio towards 1. Objects now get the randoms' weight and z cut; all spec `figures/variants/` were rerun (job 60337714). Real spec mode removal is photo-like (LRG 0.73–0.80 at ℓ = 2–5, QSO 0.58–0.65 at ℓ = 6–9). Old outputs: `figures/variants/old_unitweight_20261026/`. Sidecars, photo and real-data results were not affected.
+- Real-data Cgg vs map choice, against the mock spread: `TESTS_SUMMARY.ipynb` B3 and README. SFD/CSFD irrelevant; HI removes real low-ℓ contamination.
 - Pending:
   - (done) BGS act_dr6 100-mock rerun with the 3-map default → `figures/variants/spec_act_dr6_BGS.txt`
   - ELG SysNet array (60318577) → ELG mode removal (60318589)
