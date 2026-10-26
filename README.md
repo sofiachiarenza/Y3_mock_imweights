@@ -110,13 +110,19 @@ Inputs and method:
 - The sign is the same everywhere, which suggests the DESI EBV_DIFF (which contains −(SFD's CIB)) takes out ~1% of the κ correlation. Every shift is ≤ 0.2σ per bin.
 - Dropping HI (`_NOHI`) changes Cgκ by ≤ 0.5%.
 
-**Test 3, Euclid-style: CSFD − SFD traces low-z galaxies beyond the CIB route.**
-- This is the same test as C. Daley's Euclid CMBX KP2-3 slide 13 (22 Oct 2026): r(t, X) = r(t, CIB)·r(CIB, X), with nothing fitted.
-- At 857 GHz (2.5e20 mask), mean over ℓ ≥ 92, raw δ_g: r(δ_g, D) = −0.18 to −0.28 for BGS and LRG, which is 2.4–6× the CIB-route prediction. The excess falls with redshift: BGS 5–6×, LRG1 ~4×, LRG3 ~2.5×.
-- QSO is consistent with the CIB route (0.6–1.7×).
-- The CIB auto is the odd × even half-ring cross, which is noise-free, as in Euclid (since 2026-10-26). The full-mission auto is ≥ 99% signal at 857 GHz (98% at 545, 85–94% at 353) for ℓ < 768. So noise-debiasing moves the prediction by < 1% at 857 GHz; the excess is not CIB-map noise. The full-mission rows are kept, labelled `fullmission`.
-- Interpretation: the CSFD correction contains galaxy-reconstructed, mostly low-z structure. That is why a fit spanning it removes κ signal.
-- r(δ_g, SFD) ≈ +0.03 to +0.06, matching its CIB-route prediction. r(δ_g, CSFD) ≈ 0, so CSFD itself is clean.
+**Test 3, Euclid-style (C. Daley, Euclid CMBX KP2-3, 22 Oct 2026, slide 13): galaxy × extinction is the CIB in the template; CSFD removes it.**
+- Test: if a template X = dust + α·CIB and the dust does not correlate with the tracer, then r(g, X) = r(g, CIB)·r(CIB, X) band by band, with nothing fitted. The CIB auto is the noise-free odd × even half-ring cross, as in Euclid. The full-mission auto is ≥ 99% signal at 857 GHz for ℓ < 768, so this changes the prediction by < 1% there.
+- **SFD is the analog of Euclid's dust-emission E(B−V) template.** At 857 GHz, ℓ ≥ 92, raw δ_g:
+  - All six LRG samples: measured/predicted 0.85–1.03 (inverse-variance projection), χ²/n 0.4–0.7.
+  - The ratio rises to 1.5–1.9 at 545 GHz and 1.7–2.2 at 353 GHz, the same trend as Euclid's (δ₅: 1.26 → 1.63 → 1.89).
+  - BGS: ≈ 2× on the 2.5e20 mask but 0.85–1.07 on the 857 GHz 4e20 mask, so not robust.
+  - QSO: 0.5–0.8.
+- **CSFD:** r(g, CSFD) ≈ 0 for every sample, although r(CSFD, CIB) ≈ 0.17. The CIB that CSFD leaves in does not trace the galaxies. κ × SFD is small (r ≈ 0.02–0.1) and at or below its CIB route; κ × CSFD ≈ 0.
+- **D = CSFD − SFD** is the galaxy-traced CIB that CSFD removed (Chiang 2023 reconstructs it from galaxy cross-correlations). Its correct null is not the CIB route alone.
+  - The CIB route (r(g, c)·r(c, D)) is a lower bound. The projection r(g, c)/r(D, c), larger by 1/r(D, c)² ≈ 4, is an upper bound.
+  - Measured r(g, D) ≈ −0.2 to −0.28 sits at (measured − route)/(projection − route): BGS 1.4–1.6, LRG1 0.9–1.0, LRG2 0.8, LRG3 0.5, QSO 0–0.2, falling with redshift as expected for a low-z galaxy reconstruction.
+  - r(D, κ) is 1.5–3× its CIB route, inside the bracket.
+- Summary notebook: `TESTS_SUMMARY.ipynb`, organised as A (for Euclid) and B (DESI weights are safe).
 
 ## Method notes
 

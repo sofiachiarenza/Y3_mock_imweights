@@ -11,8 +11,9 @@ found under data/ext/lenz19_cib/<freq>/<mask>/:
  1. r_ell(X, CIB) for X = D, SFD, CSFD, LSS, HI (HI is a control: the Lenz CIB
     is HI-cleaned, so r(HI, CIB) should be ~0).
  2. r_ell(kappa, CIB) for Planck PR4 and ACT DR6 (reference).
- 3. Euclid-style test: measured r_ell(D, kappa) vs the prediction through the
-    CIB, r(D, CIB) * r(CIB, kappa), on the same footprint.
+ 3. Euclid-style test: measured r_ell(X, kappa) vs the prediction through the
+    CIB, r(X, CIB) * r(CIB, kappa), on the same footprint, for X = SFD (the analog of
+    Euclid's dust-emission extinction template), CSFD and D.
 Footprints: CIB mask, and CIB mask & photo footprint & CSFD cosmology mask.
 CIB maps are averaged over the 64 nside-2048 sub-pixels of each nside-256
 pixel; only pixels fully inside the CIB mask are kept.
@@ -173,6 +174,10 @@ def main():
             say(f"{'r(D, kappa) measured':>22s}" + "".join(f"{v:9.3f}" for v in r_dk))
             say(f"{'r(D,CIB) r(CIB,kappa)':>22s}" + "".join(f"{v:9.3f}" for v in r_dc * r_ck))
             say(f"{'r(D,CIB) r(CIB,kappa) fullmission':>22s}" + "".join(f"{v:9.3f}" for v in r_dc_fm * r_ck_fm))
+            for x in ("SFD", "CSFD"):
+                say(f"{'r(' + x + ', kappa) measured':>22s}" + "".join(f"{v:9.3f}" for v in rho(m[x], k, rr)))
+                say(f"{'r(' + x + ',CIB) r(CIB,kappa)':>22s}"
+                    + "".join(f"{v:9.3f}" for v in rho_cib(m[x], cmaps, rr, auto) * r_ck))
             say(f"{'CIB auto S/(S+N)':>22s}" + "".join(f"{v:9.3f}" for v in auto / binned(pcl(cib, cib, rr))))
             sig = 1 / np.sqrt((2 * ell_c + 1) * np.diff(BINS) * rr.mean())
             ax.fill_between(ell_c, -sig, sig, color="0.85", label=r"$\pm1/\sqrt{N_{\rm modes}}$")
