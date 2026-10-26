@@ -119,9 +119,9 @@ Inputs and method:
   - QSO: 0.5–0.8.
 - **CSFD:** r(g, CSFD) ≈ 0 for every sample, although r(CSFD, CIB) ≈ 0.17. The CIB that CSFD leaves in does not trace the galaxies. κ × SFD is small (r ≈ 0.02–0.1) and at or below its CIB route; κ × CSFD ≈ 0.
 - **D = CSFD − SFD** is the galaxy-traced CIB that CSFD removed (Chiang 2023 reconstructs it from galaxy cross-correlations). Its correct null is not the CIB route alone.
-  - The CIB route (r(g, c)·r(c, D)) is a lower bound. The projection r(g, c)/r(D, c), larger by 1/r(D, c)² ≈ 4, is an upper bound.
-  - Measured r(g, D) ≈ −0.2 to −0.28 sits at (measured − route)/(projection − route): BGS 1.4–1.6, LRG1 0.9–1.0, LRG2 0.8, LRG3 0.5, QSO 0–0.2, falling with redshift as expected for a low-z galaxy reconstruction.
-  - r(D, κ) is 1.5–3× its CIB route, inside the bracket.
+  - Two reference models: the CIB route r(g, c)·r(c, D) (g sees the CIB as a whole) and the projection r(g, c)/r(D, c) (g sees only the galaxy-traced CIB), larger by 1/r(D, c)² ≈ 4. They are reference points, not strict bounds.
+  - Measured r(g, D) ≈ −0.2 to −0.28 sits at (measured − route)/(projection − route): BGS 1.4–1.6 (beyond the projection: D also contains low-z density structure that BGS traces directly), LRG1 0.9–1.0, LRG2 0.8, LRG3 0.5, QSO 0–0.2, falling with redshift as expected for a low-z galaxy reconstruction.
+  - r(D, κ) is 1.5–3× its CIB route, between the two models.
 - Summary notebook: `TESTS_SUMMARY.ipynb`, organised as A (for Euclid) and B (DESI weights are safe).
 
 ## Method notes
