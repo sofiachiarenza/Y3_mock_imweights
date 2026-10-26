@@ -10,3 +10,4 @@ slurm/logs/
 figures/**/*.npz
 *.tmp
 data/cib_nside256/
+.ipynb_checkpoints/

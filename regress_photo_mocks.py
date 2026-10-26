@@ -30,10 +30,13 @@ jax.config.update("jax_enable_x64", True)
 log = logging.getLogger("regress_photo")
 
 
-def variant_maps(cfg, tracer, variant):
-    """Template list for (tracer, variant); None if the variant doesn't apply."""
+def variant_maps(cfg, tracer, variant, data=False):
+    """Template list for (tracer, variant); None if the variant doesn't apply
+    (wrong tracer, or a data_only variant on a mock)."""
     spec = cfg["photo"]["variants"][variant]
     if "tracers" in spec and tracer not in spec["tracers"]:
+        return None
+    if spec.get("data_only") and not data:
         return None
     if "maps" in spec:
         return list(spec["maps"])
@@ -46,10 +49,10 @@ def load_templates(path):
     return {c: np.asarray(t[c], float) for c in t.colnames}
 
 
-def fit_one(data_pix, rand_pix, rand_w, templates, maps, nbins, tail):
+def fit_one(data_pix, rand_pix, rand_w, templates, maps, nbins, tail, data_w=None):
     """-> (weights for data_pix, coefficient dict incl. chi2) or (None, None)."""
     reg = LinearRegressor.from_stacked_templates(
-        data_weights=np.ones(len(data_pix)),
+        data_weights=np.ones(len(data_pix)) if data_w is None else data_w,
         random_weights=np.asarray(rand_w, float),
         template_values_data=np.vstack([templates[m][data_pix] for m in maps]),
         template_values_randoms=np.vstack([templates[m][rand_pix] for m in maps]),
@@ -79,14 +82,16 @@ def region_of_pix(pix, regions):
     return lab
 
 
-def regress_catalog(cfg, tracer, ra, dec, templates, rand_pix, rand_w, variants, regions):
-    """Fit every (variant, region) for one catalog. Returns ({col: weights}, {variant: {region: coeffs}})."""
+def regress_catalog(cfg, tracer, ra, dec, templates, rand_pix, rand_w, variants, regions, data=False, data_w=None):
+    """Fit every (variant, region) for one catalog. Returns ({col: weights}, {variant: {region: coeffs}}).
+    data=True enables data_only variants; data_w are optional per-object data weights (default 1)."""
     pix = radec_to_pix(ra, dec)
+    dw = np.ones(len(pix)) if data_w is None else np.asarray(data_w, float)
     lab = region_of_pix(pix, regions)
     rlab = region_of_pix(rand_pix, regions)
     weights, coeffs = {}, {}
     for v in variants:
-        maps = variant_maps(cfg, tracer, v)
+        maps = variant_maps(cfg, tracer, v, data=data)
         if maps is None:
             continue
         w = np.ones(len(pix))
@@ -95,7 +100,8 @@ def regress_catalog(cfg, tracer, ra, dec, templates, rand_pix, rand_w, variants,
             sd, sr = lab == r, rlab == r
             if sd.sum() == 0 or sr.sum() == 0:
                 continue
-            wr, best = fit_one(pix[sd], rand_pix[sr], rand_w[sr], templates, maps, cfg["nbins"], cfg["tail"])
+            wr, best = fit_one(pix[sd], rand_pix[sr], rand_w[sr], templates, maps, cfg["nbins"], cfg["tail"],
+                               data_w=dw[sd])
             if wr is None:
                 log.error("%s %s %s: regression failed", tracer, v, r)
                 w[sd] = np.nan

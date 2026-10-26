@@ -113,37 +113,58 @@ def cache_path(cfg, sample, tracer):
     return os.path.join(cfg["paths"]["cache_root"], f"{sample}_{tracer}.fits")
 
 
+class RandomsCompressor:
+    """Accumulate randoms chunk by chunk into per-pixel (per z-bin) summed weights.
+    z-bin membership uses the same strict (Z > zmin) & (Z < zmax) as produce_imweights."""
+
+    def __init__(self, zbins=None):
+        self.zbins = zbins or [None]
+        nz = len(self.zbins)
+        self.wsum = np.zeros(nz * NPIX)
+        self.nsum = np.zeros(nz * NPIX, dtype=np.int64)
+
+    def add(self, ra, dec, w=None, z=None):
+        pix = radec_to_pix(ra, dec)
+        size = len(self.wsum)
+        if self.zbins[0] is None:
+            self.wsum += np.bincount(pix, weights=w, minlength=size) if w is not None else np.bincount(pix, minlength=size)
+            self.nsum += np.bincount(pix, minlength=size)
+            return
+        for k, (lo, hi) in enumerate(self.zbins):
+            sel = (z > lo) & (z < hi)
+            self.wsum += np.bincount(pix[sel] + k * NPIX, weights=None if w is None else w[sel], minlength=size)
+            self.nsum += np.bincount(pix[sel] + k * NPIX, minlength=size)
+
+    def table(self, **meta):
+        keep = np.flatnonzero(self.nsum > 0)
+        t = Table({"PIX": keep % NPIX, "ZBIN": keep // NPIX, "W": self.wsum[keep].astype(float), "NRAN": self.nsum[keep]})
+        t.meta.update({"NSIDE": NSIDE, "ORDERING": "NEST", **meta})
+        return t
+
+
+def spec_random_weight(r):
+    """produce_imweights randoms weight convention."""
+    return r["WEIGHT"] * r["WEIGHT_FKP"] / r["WEIGHT_SYS"] / r["WEIGHT_ZFAIL"]
+
+
 def build_randoms_cache(cfg, sample, tracer, max_rows=None, log=print):
     """Chunked read of mock_randoms_<T>.h5 -> per-pixel (per z-bin for spec)
     summed random weight. Spec weight = WEIGHT*WEIGHT_FKP/WEIGHT_SYS/WEIGHT_ZFAIL
     (the produce_imweights convention); photo weight = 1 per random.
-    z-bin membership uses the same strict (Z > zmin) & (Z < zmax) as
-    produce_imweights. Returns a Table with PIX, ZBIN, W, NRAN."""
-    zbins = cfg["spec"]["tracers"][tracer]["zbins"] if sample == "spec" else [None]
-    nz = len(zbins)
-    wsum = np.zeros(nz * NPIX)
-    nsum = np.zeros(nz * NPIX, dtype=np.int64)
+    Returns a Table with PIX, ZBIN, W, NRAN."""
+    comp = RandomsCompressor(cfg["spec"]["tracers"][tracer]["zbins"] if sample == "spec" else None)
     path = randoms_h5_path(cfg, sample, tracer)
     with h5py.File(path, "r") as f:
         ds = f["__astropy_table__"]
         n = ds.shape[0] if max_rows is None else min(max_rows, ds.shape[0])
         for start in range(0, n, CHUNK):
             r = ds[start:min(start + CHUNK, n)]
-            pix = radec_to_pix(r["RA"], r["DEC"])
             if sample == "spec":
-                w = r["WEIGHT"] * r["WEIGHT_FKP"] / r["WEIGHT_SYS"] / r["WEIGHT_ZFAIL"]
-                for k, (lo, hi) in enumerate(zbins):
-                    sel = (r["Z"] > lo) & (r["Z"] < hi)
-                    wsum += np.bincount(pix[sel] + k * NPIX, weights=w[sel], minlength=nz * NPIX)
-                    nsum += np.bincount(pix[sel] + k * NPIX, minlength=nz * NPIX)
+                comp.add(r["RA"], r["DEC"], spec_random_weight(r), r["Z"])
             else:
-                wsum += np.bincount(pix, minlength=NPIX).astype(float)
-                nsum += np.bincount(pix, minlength=NPIX)
+                comp.add(r["RA"], r["DEC"])
             log(f"[{sample} {tracer}] randoms rows {min(start + CHUNK, n):,}/{n:,}")
-    keep = np.flatnonzero(nsum > 0)
-    t = Table({"PIX": keep % NPIX, "ZBIN": keep // NPIX, "W": wsum[keep], "NRAN": nsum[keep]})
-    t.meta.update({"SAMPLE": sample, "TRACER": tracer, "SOURCE": path, "NROWS": int(n), "NSIDE": NSIDE, "ORDERING": "NEST"})
-    return t
+    return comp.table(SAMPLE=sample, TRACER=tracer, SOURCE=path, NROWS=int(n))
 
 
 def load_randoms_cache(cfg, sample, tracer):
@@ -175,6 +196,28 @@ def sidecar_path(cfg, sample, lensmap, tracer, sim, hdu):
     return os.path.join(cfg["paths"]["output_root"], sample, lensmap, tracer, f"mock_sim{sim:04d}_hdu{hdu}.h5")
 
 
+def compare_sidecars(new, ref, log=print):
+    """max |w_new - w_ref| per weight column present in both; returns the overall max."""
+    worst = 0.0
+    with h5py.File(new, "r") as a, h5py.File(ref, "r") as b:
+        for col in sorted(k for k in a.keys() if k.startswith("WEIGHT")):
+            if col not in b:
+                log(f"  {col:28s} not in reference")
+                continue
+            d = float(np.max(np.abs(a[col][:] - b[col][:])))
+            worst = max(worst, d)
+            log(f"  {col:28s} max|dw| = {d:.3e}")
+    return worst
+
+
+def read_data_sidecar(path):
+    """-> ({weight column: array}, {extra column: array}) of a real-data sidecar."""
+    with h5py.File(path, "r") as f:
+        w = {k: f[k][:] for k in f.keys() if k.startswith("WEIGHT")}
+        ex = {k: f["extra"][k][:] for k in f["extra"].keys()} if "extra" in f else {}
+    return w, ex
+
+
 def existing_columns(path):
     with h5py.File(path, "r") as f:
         return {k for k in f.keys() if k.startswith("WEIGHT")}
@@ -199,8 +242,10 @@ def append_sidecar(path, nrows, weights, coeffs):
     os.replace(tmp, path)
 
 
-def write_sidecar(path, nrows, weights, coeffs, meta):
-    """weights: {column: full-HDU-length array}; coeffs: {variant: {key: {par: value}}}."""
+def write_sidecar(path, nrows, weights, coeffs, meta, extra=None):
+    """weights: {column: full-HDU-length array}; coeffs: {variant: {key: {par: value}}};
+    extra: optional {name: array} written with its own dtype under extra/ (real catalogs:
+    TARGETID, RA, DEC and the non-imaging analysis weight, so later steps need no catalog reads)."""
     os.makedirs(os.path.dirname(path), exist_ok=True)
     tmp = path + ".tmp"
     with h5py.File(tmp, "w") as f:
@@ -210,6 +255,9 @@ def write_sidecar(path, nrows, weights, coeffs, meta):
         for col, w in weights.items():
             assert len(w) == nrows, (col, len(w), nrows)
             f.create_dataset(col, data=np.asarray(w, "f8"), compression="gzip")
+        for col, v in (extra or {}).items():
+            assert len(v) == nrows, (col, len(v), nrows)
+            f.create_dataset(f"extra/{col}", data=np.asarray(v), compression="gzip")
         g = f.create_group("coeffs")
         for variant, fits_ in coeffs.items():
             gv = g.create_group(variant)

@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 N=${1:-2}
-PY=env/bin/python
+PY=python   # env from slurm/_env.sh
 run() {  # tracer lensmap first_sim
     local start=$(date +%s)
     $PY -u regress_spec_mocks.py --tracer $1 --lensmap $2 --sim-start $3 --sim-stop $(( $3 + N - 1 )) --output-root outputs/pilot

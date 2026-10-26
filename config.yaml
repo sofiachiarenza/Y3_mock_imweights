@@ -2,20 +2,29 @@
 # See README.md for the rationale behind every map choice below.
 
 paths:
-  spec_mock_root: /lustre06/project/6033532/schiaren/LogNormal_Mocks        # <lensmap>/<T>/mock_simNNNN.fits + mock_randoms_<T>.h5
-  photo_mock_root: /lustre06/project/6033532/schiaren/2026-09-29            # same layout, photometric samples
-  spec_hpmaps_dir: /lustre06/project/6033532/schiaren/Y3_AMR/hpmaps         # DESI DA2 <SAMPLE>_mapprops_healpix_nested_nside256_{N,S}.fits + desi_ebv_lss_256.fits
-  pixweight: /lustre06/project/6033532/schiaren/Y3_AMR_nersc/photo_outputs/pixweight-1-dark.fits
-  ext_dir: data/ext                                                         # dustmaps data + HI4PI (relative to this folder)
+  spec_mock_root: /pscratch/sd/g/gfarren/desi_y3_x_cmb_data/mock_catalogs/spec/2026-07-14     # <lensmap>/<T>/mock_simNNNN.fits + mock_randoms_<T>.h5
+  photo_mock_root: /pscratch/sd/g/gfarren/desi_y3_x_cmb_data/mock_catalogs/photo/2026-09-29   # same layout, photometric samples
+  spec_hpmaps_dir: /dvs_ro/cfs/cdirs/desi/survey/catalogs/DA2/LSS/loa-v1/LSScats/v2/hpmaps     # DESI DA2 <SAMPLE>_mapprops_healpix_nested_nside256_{N,S}.fits
+  debv_map: /global/cfs/cdirs/desicollab/users/rongpu/data/ebv/desi_stars_y3/v0.1/final_maps/lss/desi_ebv_lss_256.fits  # LSS.common_tools.get_debv default
+  sky_resid_north: /dvs_ro/cfs/cdirs/desi/users/rongpu/imaging_mc/ism_mask/sky_resid_map_256_north.fits
+  sky_resid_south: /dvs_ro/cfs/cdirs/desi/users/rongpu/imaging_mc/ism_mask/sky_resid_map_256_south.fits
+  pixweight: /global/cfs/cdirs/desi/survey/catalogs/pixweight_maps_all/pixweight-1-dark.fits
+  ext_dir: data/ext                                                         # dustmaps data + HI4PI + Lenz CIB (relative to this folder)
   photo_templates: data/photo_templates_nside256_nest.fits                  # built by build_dust_templates.py
   output_root: outputs
   figures: figures
   kappa:
-    planck_pr4: /lustre06/project/6033532/schiaren/PNG_DR2/nersc_data/PR4_lensing/PR4_klm_dat_p.fits
-    planck_pr4_mask: /lustre06/project/6033532/schiaren/PNG_DR2/nersc_data/PR4_lensing/mask.fits.gz
-    act_dr6: /lustre06/project/6033532/schiaren/Y3_AMR/ACT_lensing/baseline/kappa_alm_data_act_dr6_lensing_v1_baseline.fits
-    galactic: {planck_pr4: true, act_dr6: false}   # DESI_Y3_x_CMB_AMR/configs/*_lensing_config.yaml
-    act_dr6_mask: /lustre06/project/6033532/schiaren/Y3_AMR/ACT_lensing/baseline/mask_act_dr6_lensing_v1_healpix_nside_4096_baseline.fits
+    planck_pr4: /pscratch/sd/g/gfarren/desi_y3_x_cmb_data/planck_pr4_scratch_copy/PR4_klm_dat_p.fits
+    planck_pr4_mask: /pscratch/sd/g/gfarren/desi_y3_x_cmb_data/planck_pr4_scratch_copy/mask.fits.gz
+    act_dr6: /dvs_ro/cfs/projectdirs/act/www/dr6_lensing_v1/maps/baseline/kappa_alm_data_act_dr6_lensing_v1_baseline.fits
+    galactic: {planck_pr4: true, act_dr6: false}   # DESI_Y3_x_CMB/configs/*_lensing_config.yaml
+    act_dr6_mask: /dvs_ro/cfs/projectdirs/act/www/dr6_lensing_v1/maps/baseline/mask_act_dr6_lensing_v1_healpix_nside_4096_baseline.fits
+
+# Real catalogs, read with the upstream DESI_Y3_x_CMB loaders (photo: Gerrit's saved PhotoSample h5 +
+# randoms-1-<i>.fits; spec: NonSavableSpecSample on desi_catalog_scratch_copies, DA2 loa-v1 v2).
+data:
+  upstream_repo: /pscratch/sd/s/schiaren/DESI_Y3_x_CMB_upstream
+  n_randoms: 4            # randoms files (per cap for spec); compressed per pixel, so this only sets read time
 
 nside: 256
 nest: true
@@ -34,9 +43,12 @@ spec:
   lensmaps:
     act_dr6: [BGS, LRG1, LRG2, LRG3, QSO, QSO1, QSO2]
     planck_pr4: [LRG1, LRG2, LRG3, QSO]
-  png_dr2_qso_weights: /lustre06/project/6033532/schiaren/PNG_DR2/scripts/output/imaging_weights_lognormal/QSO
+  png_dr2_qso_weights: /global/cfs/cdirs/desicollab/users/schiarenza/PNG_DR2/scripts/output/imaging_weights_lognormal/QSO
   maps:
-    BGS: &bgs_maps [STARDENS, GALDEPTH_R, HI, EBV_DIFF_GR, EBV_DIFF_RZ]
+    # BGS: LSS globals.py default fit_maps (reproduces the official BGS_BRIGHT-21.35 WEIGHT_IMLIN_CLUS,
+    # corr 0.9985). Until 2026-10-26 this was the 5-map 'allebv' list (+EBV_DIFF_GR/RZ) from the Y3_AMR
+    # lin_regr scripts, which does NOT match DESI (corr 0.48); it is kept as the variant WEIGHT_IMLIN_ALLEBV.
+    BGS: &bgs_maps [STARDENS, GALDEPTH_R, HI]
     LRG: &lrg_maps [EBV_DIFF_GR, EBV_DIFF_RZ, GALDEPTH_G, GALDEPTH_R, GALDEPTH_Z, HI,
                     PSFDEPTH_W1, PSFSIZE_G, PSFSIZE_R, PSFSIZE_Z, STARDENS]
     QSO: &qso_maps [EBV_DIFF_GR, EBV_DIFF_RZ, HI, PSFDEPTH_G, PSFDEPTH_R, PSFDEPTH_W1,
@@ -49,15 +61,22 @@ spec:
     QSO:  {templates: QSO, maps: *qso_maps, zbins: [[0.8, 1.3], [1.3, 2.1]], regions: [N, SnotDES, DES]}
     QSO1: {templates: QSO, maps: *qso_maps, zbins: [[0.8, 1.3], [1.3, 1.6]], regions: [N, SnotDES, DES]}
     QSO2: {templates: QSO, maps: *qso_maps, zbins: [[1.6, 2.1]], regions: [N, SnotDES, DES]}
+    # ELG is fit with SysNet (sysnet/), not here; this entry only feeds build_randoms_cache / compare_variants
+    ELG:  {templates: ELG_LOPnotqso, maps: [STARDENS, PSFSIZE_G, PSFSIZE_R, PSFSIZE_Z, GALDEPTH_G, GALDEPTH_R, GALDEPTH_Z,
+                                            EBV_DIFF_GR, EBV_DIFF_RZ, HI], zbins: [[1.1, 1.6]], regions: [N, S]}
   # Variant: SFD reference inside EBV_DIFF swapped for CSFD
   # (EBV_DIFF_XX_CSFD = EBV_DIFF_XX + SFD_pix - CSFD_pix).
   variants:
     WEIGHT_IMLIN: {}
-    WEIGHT_IMLIN_CSFD: {replace: {EBV_DIFF_GR: EBV_DIFF_GR_CSFD, EBV_DIFF_RZ: EBV_DIFF_RZ_CSFD}}
+    WEIGHT_IMLIN_CSFD: {replace: {EBV_DIFF_GR: EBV_DIFF_GR_CSFD, EBV_DIFF_RZ: EBV_DIFF_RZ_CSFD},
+                        tracers: [LRG1, LRG2, LRG3, QSO, QSO1, QSO2]}   # BGS default has no EBV_DIFF: would equal WEIGHT_IMLIN
     # photo-style dust block (CSFD + HI instead of EBV_DIFF): like-for-like with the photo default
     WEIGHT_IMLIN_CSFDHI: {drop: [EBV_DIFF_GR, EBV_DIFF_RZ], add: [CSFD]}
     WEIGHT_IMLIN_NOHI: {drop: [HI]}
-  # variant keys: replace {old: new}, drop [..], add [..] (applied in that order to the tracer's map list)
+    # the pre-2026-10-26 BGS list (LSS 'allebv'): DESI default + EBV_DIFF_GR/RZ
+    WEIGHT_IMLIN_ALLEBV: {add: [EBV_DIFF_GR, EBV_DIFF_RZ], tracers: [BGS]}
+  # variant keys: replace {old: new}, drop [..], add [..] (applied in that order to the tracer's map list);
+  # optional tracers [..] restricts a variant to those tracers
 
 # --------------------------------------------------------------------------
 # Photometric samples: no DESI default; built to mirror spec.
@@ -82,3 +101,5 @@ photo:
     WEIGHT_IMLIN_SFDHI: {dust: [SFD, HI]}            # same with SFD
     WEIGHT_IMLIN_CSFDONLY: {dust: [CSFD]}            # previous photo choice
     WEIGHT_IMLIN_SPECLIKE: {maps: [STARDENS, GALDEPTH_R, HI, CSFD], tracers: [BGS]}  # mirrors spec BGS
+    # data only (skipped on mocks): lets the CIB direction act on real data; a diagnostic, never a weight to use
+    WEIGHT_IMLIN_CSFDSFDHI: {dust: [CSFD, SFD, HI], data_only: true}

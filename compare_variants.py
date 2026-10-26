@@ -81,7 +81,7 @@ def main():
             cls.setdefault("UNWEIGHTED", []).append(cl_of(pix, np.ones(len(pix)), R, mask))
             for k, w in ws.items():
                 cls.setdefault(k, []).append(cl_of(pix, w, R, mask))
-                if k != "WEIGHT_IMLIN":
+                if "WEIGHT_IMLIN" in ws and k != "WEIGHT_IMLIN":
                     sel = ws["WEIGHT_IMLIN"] != 1
                     dw.setdefault(k, []).append(np.std(w[sel] - ws["WEIGHT_IMLIN"][sel]))
         if not sims:
@@ -89,14 +89,15 @@ def main():
             continue
         cls = {k: np.array(v) for k, v in cls.items()}
         n = len(sims)
-        base = cls["WEIGHT_IMLIN"]
+        bkey = "WEIGHT_IMLIN" if "WEIGHT_IMLIN" in cls else next(k for k in cls if k != "UNWEIGHTED")  # ELG: WEIGHT_SN_MOCK
+        base = cls[bkey]
         lines = [f"# {args.sample} {args.lensmap} {tracer}: {n} sims, fsky(mask)={mask.mean():.4f}",
                  "# ell bins: " + " ".join(f"{lo}-{hi - 1}" for lo, hi in zip(EDGES[:-1], EDGES[1:]))]
         fig, ax = plt.subplots(figsize=(7, 4.5))
         for k, c in cls.items():
             num, den = (base, cls["UNWEIGHTED"]) if k == "UNWEIGHTED" else (c, base)
             label = "baseline/unweighted" if k == "UNWEIGHTED" else f"{k}/baseline"
-            if k == "WEIGHT_IMLIN":
+            if k == bkey:
                 continue
             r = num / den
             mean, err = r.mean(0), r.std(0, ddof=1) / np.sqrt(n) if n > 1 else np.zeros(r.shape[1])

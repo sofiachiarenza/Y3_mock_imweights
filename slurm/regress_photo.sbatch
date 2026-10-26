@@ -1,11 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=y3imw_photo
-#SBATCH --account=rrg-wperciva
+#SBATCH --account=desi_g
+#SBATCH --constraint=gpu
+#SBATCH --qos=shared
+#SBATCH --gpus=1
 #SBATCH --time=03:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
-#SBATCH --mem=24G
+#SBATCH --cpus-per-task=32
 #SBATCH --array=0-79
 #SBATCH --output=slurm/logs/photo_%A_%a.out
 #SBATCH --error=slurm/logs/photo_%A_%a.out
@@ -14,6 +16,7 @@
 # Submit from the repo root:  sbatch slurm/regress_photo.sbatch
 set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
+source slurm/_env.sh
 TRACERS=(BGS LRG1 LRG2 LRG3)
 LENSMAPS=(act_dr6 planck_pr4)
 FIRST=(1 260)                         # first sim per lensmap (config.yaml: sims)
@@ -24,5 +27,5 @@ CHUNK=$(( ID % 10 ))
 START=$(( FIRST[L] + CHUNK * 10 ))
 STOP=$(( START + 9 ))
 echo "task $ID: $T ${LENSMAPS[$L]} sims $START-$STOP"
-env/bin/python -u regress_photo_mocks.py --tracer "$T" --lensmap "${LENSMAPS[$L]}" \
+python -u regress_photo_mocks.py --tracer "$T" --lensmap "${LENSMAPS[$L]}" \
     --sim-start "$START" --sim-stop "$STOP" --skip-existing

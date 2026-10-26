@@ -35,7 +35,7 @@ def build_templates(cfg, tracer):
     """{'N': Table, 'S': Table} with the extra EBV_DIFF_*_CSFD columns."""
     hpdir = cfg["paths"]["spec_hpmaps_dir"]
     prefix = cfg["spec"]["tracers"][tracer]["templates"]
-    debv = get_debv(os.path.join(hpdir, "desi_ebv_lss_256.fits"))
+    debv = get_debv(cfg["paths"]["debv_map"])
     dust = Table.read(cfg["paths"]["photo_templates"])
     shift = np.asarray(dust["SFD"], float) - np.asarray(dust["CSFD"], float)
     out = {}
@@ -49,8 +49,11 @@ def build_templates(cfg, tracer):
 
 
 def variant_maps(cfg, tracer, variant):
-    """Tracer's DESI map list with the variant's replace -> drop -> add applied."""
+    """Tracer's DESI map list with the variant's replace -> drop -> add applied;
+    None if the variant is restricted to other tracers."""
     v = cfg["spec"]["variants"][variant]
+    if "tracers" in v and tracer not in v["tracers"]:
+        return None
     rep = v.get("replace", {})
     maps = [rep.get(m, m) for m in cfg["spec"]["tracers"][tracer]["maps"]]
     maps = [m for m in maps if m not in v.get("drop", [])]
@@ -76,18 +79,21 @@ def regress_catalog(cfg, tracer, data, templates, randoms, variants):
     inside = np.flatnonzero(data["PHOTSYS"] != "")
     sub = data[inside]
     kwargs = spec_region_masks(sub) if tracer in QSO_FAMILY else {}
-    hpdir = cfg["paths"]["spec_hpmaps_dir"]
+    paths = cfg["paths"]
     weights, coeffs = {}, {}
     for v in variants:
+        maps = variant_maps(cfg, tracer, v)
+        if maps is None:
+            continue
         tmp = tempfile.mkdtemp(prefix="y3imw_")
         try:
             w = produce_imweights(
                 data_catalogs=sub, randoms_catalogs=randoms, tracer_type=tracer, redshift_range=zbins,
                 templates_maps_path_S=templates["S"], templates_maps_path_N=templates["N"],
-                fit_maps=variant_maps(cfg, tracer, v),
-                debv_map_path=os.path.join(hpdir, "desi_ebv_lss_256.fits"),
-                sky_res_map_path_north=os.path.join(hpdir, "sky_resid_map_256_north.fits"),
-                sky_res_map_path_south=os.path.join(hpdir, "sky_resid_map_256_south.fits"),
+                fit_maps=maps,
+                debv_map_path=paths["debv_map"],
+                sky_res_map_path_north=paths["sky_resid_north"],
+                sky_res_map_path_south=paths["sky_resid_south"],
                 output_directory=tmp, save_summary_plots=False, nbins=cfg["nbins"], tail=cfg["tail"],
                 logger=log, loglevel="WARNING", **kwargs)
             coeffs[v] = read_coeffs(tmp)
@@ -136,7 +142,7 @@ def main():
         out = sidecar_path(cfg, "spec", args.lensmap, args.tracer, sim, hdu)
         todo, append = variants, False
         if args.skip_existing and os.path.exists(out):
-            todo = [v for v in variants if v not in existing_columns(out)]
+            todo = [v for v in variants if v not in existing_columns(out) and variant_maps(cfg, args.tracer, v) is not None]
             if not todo:
                 continue
             append = True

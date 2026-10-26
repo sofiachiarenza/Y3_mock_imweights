@@ -18,7 +18,12 @@ Sims: hdu 1, act_dr6 1–100, planck_pr4 260–359.
 
 ## Map choices
 
-**Spec:** the DESI default lists from the Y3 `lin_regr_*.py` scripts. They include EBV_DIFF_GR/RZ and HI, which are defined only on the DESI spec footprint.
+**Spec:** the DESI default lists. LRG and QSO include EBV_DIFF_GR/RZ and HI, which are defined only on the DESI spec footprint.
+- **BGS is STARDENS, GALDEPTH_R, HI** (LSS `globals.py` default; changed 2026-10-26).
+  - The Y3 `lin_regr_*.py` scripts added EBV_DIFF_GR/RZ to BGS. That is the non-default LSS `allebv` list.
+  - On data it does not reproduce the official `WEIGHT_IMLIN_CLUS`: corr 0.48, versus 0.9985 for the 3-map list.
+  - It is kept as the BGS-only variant `WEIGHT_IMLIN_ALLEBV`.
+  - The old 5-map mock sidecars are in `outputs/spec/act_dr6/BGS_allebv5map_20261022/`.
 
 **Photo:** DESI has no default for these samples. The list mirrors spec as closely as possible:
 - Imaging maps: GALDEPTH_G/R/Z, PSFDEPTH_W1 (LRG only), PSFSIZE_G/R/Z, STARDENS.
@@ -57,6 +62,7 @@ These are shot-noise-subtracted pseudo-Cℓ at nside 256 over the full mock foot
 - **Dust choice is negligible.** Photo SFD+HI vs CSFD+HI, and spec CSFD-referenced EBV_DIFF vs the default, change ⟨Cgg⟩ by ≤ 0.05% at ℓ ≥ 10 and ≤ 0.4% at ℓ < 10, consistent with 1 within the errors. The rms weight difference is 5–11e-4.
 - **Photo mode removal** (baseline/unweighted, ℓ = 2–5 | 6–9 | 10–14): BGS 0.79–0.80 | 0.91 | 0.96; LRG1–3 0.80–0.87 | 0.90–0.93 | 0.96–0.98. It is below 1% for ℓ ≳ 30.
 - **Spec mode removal** is much milder: LRG 0.97–1.00 at ℓ < 20; QSO/QSO1/QSO2 within about 0.5–1% of 1.
+- **Spec BGS with the DESI 3-map default** (rerun 2026-10-26, act_dr6, 100 mocks): baseline/unweighted is 0.989 ± 0.004 (ℓ = 2–5), 0.970 ± 0.005 (6–9), 0.986 ± 0.002 (10–14) and 0.989 ± 0.002 (15–19), and ≤ 0.3% at ℓ ≥ 20. The old 5-map list (now `WEIGHT_IMLIN_ALLEBV`) removed 0.5–1.4% more at ℓ < 20 (ALLEBV/baseline 0.986–0.997).
 - **CSFD-only vs the CSFD+HI baseline:** up to about 3% differences at ℓ < 10 (HI removes a little more power). **Spec-like BGS** removes about 13% less power at ℓ = 2–5 than the 9-map photo default.
 - **Spec dust-block variants** (added 2026-10-22, appended to the existing sidecars):
 
@@ -76,7 +82,41 @@ This checks CSFD − SFD against the Lenz, Doré & Lagache (2019) CIB, which unl
   - The HI control gives r ≈ 0.01–0.09, as expected, since the Lenz CIB is HI-cleaned.
 - **r with the CIB at ℓ ≳ 90:** SFD 0.22–0.28, CSFD 0.15–0.19. CSFD removes about a third of SFD's CIB correlation.
 - **Euclid-style test:** the measured r(CSFD − SFD, κ) is 1.5–2.5× the CIB-route prediction r(D, CIB)·r(CIB, κ) at ℓ ≥ 90, and far larger at ℓ < 60. This fits with the CSFD correction itself containing galaxy-traced structure. Noise in the CIB map dilutes the prediction, so the low-ℓ numbers shouldn't be over-interpreted.
-- **Not done yet:** 545/353 GHz and the 857 GHz 4.0e20 mask. The Dataverse downloads (doi:10.7910/DVN/8A1SR3) came back as error pages, so those maps have to be downloaded by hand into `data/ext/lenz19_cib/<freq>/<mask>/`; `cib_check.py` picks them up automatically.
+- **All frequencies (2026-10-26):** 353, 545 and 857 GHz on the 2.5e20 mask, plus 857 GHz on the 4.0e20 mask.
+  - r(D, CIB) at ℓ ≥ 92 is −0.38 to −0.44 (353 GHz), −0.43 to −0.47 (545 GHz), −0.49 to −0.57 (857 GHz, 2.5e20 mask), and −0.42 to −0.48 (857 GHz, 4.0e20 mask).
+  - The measured r(D, κ) is the same for every map, while the CIB-route prediction stays 1.5–3× smaller at ℓ ≥ 92 for all four. This holds with the noise-free odd × even CIB auto; `CIB auto S/(S+N)` in `cib_check.txt` gives the signal fraction per ℓ.
+  - So the excess does not depend on the frequency or the mask.
+
+## Real-data tests (2026-10-26; `regress_{photo,spec}_data.py`, `compare_data_variants.py`, `euclid_data_check.py`)
+
+Inputs and method:
+- Real catalogs come from the upstream DESI_Y3_x_CMB loaders, with 4 randoms files (per cap for spec) and the same fit as on the mocks.
+- Cℓ are nside-256 pseudo-Cℓ, all variants on the same mask. Ratios and shifts are relative to the baseline `WEIGHT_IMLIN`; σ is the per-bin Knox error on Cgκ.
+- These are diagnostics, not the analysis bandpowers. Results are in `figures/data_variants/<sample>_<T>.txt` and `figures/euclid_data_<sample>_<T>.txt`.
+- **Validation:**
+  - On one mock, the data drivers reproduce the Narval sidecars: photo max|Δw| = 3e-5, spec 4e-4. The spec value comes from MIGRAD stopping differently in one fit (N, z 0.5–0.6); the other fits agree to ~1e-7.
+  - Refit default vs the official catalog weight: LRG1–3 and QSO corr 0.994–0.996, BGS (3 maps) 0.9985.
+  - QSO1 (0.96) and QSO2 (0.86) are lower, as expected: their official weight is the full-QSO fit on the QSO z bins.
+
+**Test 1, photo dust choice: the baseline is safe; fitting SFD and CSFD together is not.**
+- The baseline (CSFD + HI) agrees with SFD + HI and with CSFD only: Cgκ(ℓ ≥ 30) within 0.5% for BGS and LRG1–3, at most 0.07σ per bin, for both ACT and Planck. Cgg shifts by < 0.5% at ℓ ≥ 10.
+- **The CSFD + SFD + HI diagnostic removes 46–73% of Cgκ at ℓ ≥ 30**, up to 6–8σ per bin (BGS 8.2σ, LRG1 7.4σ), and 5–20% of Cgg.
+  - On data, this fit spans the CIB direction (≈ 9 × (CSFD − SFD)), which correlates with κ, exactly as feared. Never use it.
+
+**Test 2, spec: EBV_DIFF removes ~1% of Cgκ, below the noise per bin.**
+- EBV_DIFF referenced to CSFD (`_CSFD`) raises Cgκ(ℓ ≥ 30) by 0.6–1.3% (ACT) and 0.1–0.7% (Planck) for LRG1–3 and QSO.
+- The photo-style dust block (`_CSFDHI`) raises QSO Cgκ by 0.8–1.9%.
+- BGS + EBV_DIFF (`_ALLEBV`) lowers Cgκ by 3%.
+- The sign is the same everywhere, which suggests the DESI EBV_DIFF (which contains −(SFD's CIB)) takes out ~1% of the κ correlation. Every shift is ≤ 0.2σ per bin.
+- Dropping HI (`_NOHI`) changes Cgκ by ≤ 0.5%.
+
+**Test 3, Euclid-style: CSFD − SFD traces low-z galaxies beyond the CIB route.**
+- This is the same test as C. Daley's Euclid CMBX KP2-3 slide 13 (22 Oct 2026): r(t, X) = r(t, CIB)·r(CIB, X), with nothing fitted.
+- At 857 GHz (2.5e20 mask), mean over ℓ ≥ 92, raw δ_g: r(δ_g, D) = −0.18 to −0.28 for BGS and LRG, which is 2.4–6× the CIB-route prediction. The excess falls with redshift: BGS 5–6×, LRG1 ~4×, LRG3 ~2.5×.
+- QSO is consistent with the CIB route (0.6–1.7×).
+- The CIB auto is the odd × even half-ring cross, which is noise-free, as in Euclid (since 2026-10-26). The full-mission auto is ≥ 99% signal at 857 GHz (98% at 545, 85–94% at 353) for ℓ < 768. So noise-debiasing moves the prediction by < 1% at 857 GHz; the excess is not CIB-map noise. The full-mission rows are kept, labelled `fullmission`.
+- Interpretation: the CSFD correction contains galaxy-reconstructed, mostly low-z structure. That is why a fit spanning it removes κ signal.
+- r(δ_g, SFD) ≈ +0.03 to +0.06, matching its CIB-route prediction. r(δ_g, CSFD) ≈ 0, so CSFD itself is clean.
 
 ## Method notes
 

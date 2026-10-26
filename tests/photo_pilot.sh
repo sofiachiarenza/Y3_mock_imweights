@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 N=${1:-5}
-PY=env/bin/python
+PY=python   # env from slurm/_env.sh
 for T in BGS LRG1 LRG2 LRG3; do
     start=$(date +%s)
     $PY -u regress_photo_mocks.py --tracer $T --lensmap act_dr6 --sim-start 1 --sim-stop $N --output-root outputs/pilot

@@ -16,6 +16,14 @@ found under data/ext/lenz19_cib/<freq>/<mask>/:
 Footprints: CIB mask, and CIB mask & photo footprint & CSFD cosmology mask.
 CIB maps are averaged over the 64 nside-2048 sub-pixels of each nside-256
 pixel; only pixels fully inside the CIB mask are kept.
+
+CIB auto-spectrum: every correlation coefficient with the CIB uses the cross-spectrum
+of the odd-ring and even-ring half maps as C^{CIB,CIB}. Their noise is independent, so
+this cross is noise-free, as in the Euclid CMBX test (Daley, KP2-3, 22 Oct 2026, slide 13).
+With the full-mission auto, the noise bias makes |r(., CIB)| too small and the CIB-route
+prediction too small by S/(S+N); those rows are kept, labelled 'fullmission', for comparison.
+Cross-spectra with the CIB use the full-mission map: its noise does not correlate with the
+other maps.
 """
 import glob
 import os
@@ -62,8 +70,46 @@ def to_eq256(cib, mask, nest):
     return val, frac == 1.0
 
 
+def cib_maps(cfg):
+    """-> (sorted list of Lenz cib_fullmission paths, cache dir of their nside-256 versions)."""
+    root = os.path.join(cfg["paths"]["ext_dir"], "lenz19_cib")
+    cache_dir = os.path.join(os.path.dirname(cfg["paths"]["photo_templates"]), "cib_nside256")
+    os.makedirs(cache_dir, exist_ok=True)
+    return sorted(glob.glob(os.path.join(root, "*", "*", "*", "cib_fullmission.hpx.fits"))), cache_dir
+
+
+def load_cib(path, cache_dir):
+    """-> (label, {full, odd, even} CIB maps, CIB mask) at nside 256 NEST equatorial, cached as npz.
+    The odd/even half-ring maps are added to older caches that only hold the full map."""
+    d = os.path.dirname(path)
+    freq, maskname = d.split(os.sep)[-3], d.split(os.sep)[-1]
+    cache = os.path.join(cache_dir, f"cib_{freq}_{maskname}.npz")
+    z = dict(np.load(cache)) if os.path.exists(cache) else {}
+    if not {"cib", "odd", "even", "mask"} <= set(z):
+        mk, _ = read_hpx(os.path.join(d, "mask_bool.hpx.fits"))
+        for key, fn in (("cib", "cib_fullmission.hpx.fits"), ("odd", "cib_oddring.hpx.fits"),
+                        ("even", "cib_evenring.hpx.fits")):
+            if key not in z:
+                arr, nest = read_hpx(os.path.join(d, fn))
+                z[key], z["mask"] = to_eq256(arr, mk > 0, nest)
+        np.savez(cache, **z)
+    return f"{freq} GHz, {maskname}", {"full": z["cib"], "odd": z["odd"], "even": z["even"]}, z["mask"]
+
+
 def rho(a, b, m):
     return binned(pcl(a, b, m)) / np.sqrt(binned(pcl(a, a, m)) * binned(pcl(b, b, m)))
+
+
+def cib_auto(c, m):
+    """Noise-free binned CIB power: odd x even half-ring cross (NaN where not positive)."""
+    cc = binned(pcl(c["odd"], c["even"], m))
+    return np.where(cc > 0, cc, np.nan)
+
+
+def rho_cib(a, c, m, auto=None):
+    """r(a, CIB) with the odd x even CIB auto (pass auto to reuse it)."""
+    auto = cib_auto(c, m) if auto is None else auto
+    return binned(pcl(a, c["full"], m)) / np.sqrt(binned(pcl(a, a, m)) * auto)
 
 
 def main():
@@ -89,37 +135,27 @@ def main():
 
     ell_c = 0.5 * (BINS[:-1] + BINS[1:])
     hdr = f"{'':>22s}" + "".join(f"{f'{lo}-{hi}':>9s}" for lo, hi in zip(BINS[:-1], BINS[1:]))
-    root = os.path.join(cfg["paths"]["ext_dir"], "lenz19_cib")
-    cache_dir = os.path.join(os.path.dirname(cfg["paths"]["photo_templates"]), "cib_nside256")
-    os.makedirs(cache_dir, exist_ok=True)
-    maps = sorted(glob.glob(os.path.join(root, "*", "*", "*", "cib_fullmission.hpx.fits")))
+    maps, cache_dir = cib_maps(cfg)
     fig, axes = plt.subplots(len(maps), 3, figsize=(15, 3.8 * len(maps)), squeeze=False)
 
     for row, path in zip(axes, maps):
-        d = os.path.dirname(path)
-        freq, maskname = d.split(os.sep)[-3], d.split(os.sep)[-1]
-        label = f"{freq} GHz, {maskname}"
-        cache = os.path.join(cache_dir, f"cib_{freq}_{maskname}.npz")
-        if os.path.exists(cache):
-            z = np.load(cache)
-            cib, cmask = z["cib"], z["mask"]
-        else:
-            arr, nest = read_hpx(path)
-            mk, _ = read_hpx(os.path.join(d, "mask_bool.hpx.fits"))
-            cib, cmask = to_eq256(arr, mk > 0, nest)
-            np.savez(cache, cib=cib, mask=cmask)
+        label, cmaps, cmask = load_cib(path, cache_dir)
+        cib = cmaps["full"]
 
         regions = {"CIB mask": cmask, "CIB & photo & CSFD-cosmo": cmask & photo & cosmo}
         say(f"\n==== {label}")
         for rname, reg in regions.items():
             say(f"-- {rname}: npix={reg.sum()} fsky={reg.mean():.4f}")
             say(hdr)
+            auto = cib_auto(cmaps, reg)
             for x in ("D", "LSS", "SFD", "CSFD", "HI"):
-                say(f"{'r(' + x + ', CIB)':>22s}" + "".join(f"{v:9.3f}" for v in rho(m[x], cib, reg)))
+                say(f"{'r(' + x + ', CIB)':>22s}" + "".join(f"{v:9.3f}" for v in rho_cib(m[x], cmaps, reg, auto)))
+            say(f"{'r(D, CIB) fullmission':>22s}" + "".join(f"{v:9.3f}" for v in rho(m["D"], cib, reg)))
         reg = regions["CIB & photo & CSFD-cosmo"]
         ax = row[0]
+        auto = cib_auto(cmaps, reg)
         for x in ("D", "LSS", "SFD", "CSFD", "HI"):
-            ax.plot(ell_c, rho(m[x], cib, reg), marker="o", ms=3, label=x)
+            ax.plot(ell_c, rho_cib(m[x], cmaps, reg, auto), marker="o", ms=3, label=x)
         ax.axhline(0, color="k", lw=0.5)
         ax.set_title(f"r(X, CIB {label})\nCIB & photo & CSFD-cosmo")
         ax.set_xscale("log")
@@ -128,12 +164,16 @@ def main():
             k, lm = kappa[lens]
             rr = reg & lm
             r_dk = rho(m["D"], k, rr)
-            r_dc, r_ck = rho(m["D"], cib, rr), rho(cib, k, rr)
+            auto = cib_auto(cmaps, rr)
+            r_dc, r_ck = rho_cib(m["D"], cmaps, rr, auto), rho_cib(k, cmaps, rr, auto)
+            r_dc_fm, r_ck_fm = rho(m["D"], cib, rr), rho(cib, k, rr)
             say(f"-- {lens} x CIB {label}: npix={rr.sum()} fsky={rr.mean():.4f}")
             say(hdr)
             say(f"{'r(CIB, kappa)':>22s}" + "".join(f"{v:9.3f}" for v in r_ck))
             say(f"{'r(D, kappa) measured':>22s}" + "".join(f"{v:9.3f}" for v in r_dk))
             say(f"{'r(D,CIB) r(CIB,kappa)':>22s}" + "".join(f"{v:9.3f}" for v in r_dc * r_ck))
+            say(f"{'r(D,CIB) r(CIB,kappa) fullmission':>22s}" + "".join(f"{v:9.3f}" for v in r_dc_fm * r_ck_fm))
+            say(f"{'CIB auto S/(S+N)':>22s}" + "".join(f"{v:9.3f}" for v in auto / binned(pcl(cib, cib, rr))))
             sig = 1 / np.sqrt((2 * ell_c + 1) * np.diff(BINS) * rr.mean())
             ax.fill_between(ell_c, -sig, sig, color="0.85", label=r"$\pm1/\sqrt{N_{\rm modes}}$")
             ax.plot(ell_c, r_dk, "o", ms=4, label=r"measured $r(D,\kappa)$")
@@ -148,7 +188,8 @@ def main():
     fig.tight_layout()
     fig.savefig(os.path.join(figdir, "cib_check.png"), dpi=120)
     with open(os.path.join(figdir, "cib_check.txt"), "w") as f:
-        f.write("D = CSFD - SFD. CIB = Lenz, Dore & Lagache (2019).\n" + "\n".join(out) + "\n")
+        f.write("D = CSFD - SFD. CIB = Lenz, Dore & Lagache (2019); CIB auto = odd x even half-ring cross "
+                "(rows marked fullmission use the noise-biased full-mission auto).\n" + "\n".join(out) + "\n")
     print("done")
 
 
