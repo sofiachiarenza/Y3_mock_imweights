@@ -58,6 +58,25 @@ These are shot-noise-subtracted pseudo-Cℓ at nside 256 over the full mock foot
 - **Photo mode removal** (baseline/unweighted, ℓ = 2–5 | 6–9 | 10–14): BGS 0.79–0.80 | 0.91 | 0.96; LRG1–3 0.80–0.87 | 0.90–0.93 | 0.96–0.98. It is below 1% for ℓ ≳ 30.
 - **Spec mode removal** is much milder: LRG 0.97–1.00 at ℓ < 20; QSO/QSO1/QSO2 within about 0.5–1% of 1.
 - **CSFD-only vs the CSFD+HI baseline:** up to about 3% differences at ℓ < 10 (HI removes a little more power). **Spec-like BGS** removes about 13% less power at ℓ = 2–5 than the 9-map photo default.
+- **Spec dust-block variants** (added 2026-10-22, appended to the existing sidecars):
+
+  | column | dust maps |
+  |---|---|
+  | `WEIGHT_IMLIN_CSFDHI` | CSFD + HI in place of EBV_DIFF_GR/RZ, the photo-style dust block (like-for-like with photo) |
+  | `WEIGHT_IMLIN_NOHI` | the DESI default without HI |
+
+  - **CSFD+HI vs the default** (mean over 100 mocks; σ is the error on that mean): ⟨Cgg⟩ is 0.5–1.5% *higher* for LRG and BGS at ℓ < 30. The largest shift is act_dr6 LRG2 at ℓ = 10–14 (1.0153 ± 0.0030). For ℓ ≥ 30 the change is ≤ 0.5%. QSO and LRG3 change by ≤ 0.6%. The weights differ by 6–10e-3 rms, ten times more than in the SFD↔CSFD swap. On mocks, EBV_DIFF therefore removes slightly more power than a directly fitted CSFD.
+  - **No HI vs the default:** ≤ 1% at ℓ < 30 (largest: act_dr6 BGS at ℓ = 6–9, 1.010 ± 0.003) and ≤ 0.13% at ℓ ≥ 30. The weights differ by 4–7e-3 rms.
+  - Both shifts are small next to the mode-removal correction itself, but unlike the SFD↔CSFD swap they are not negligible at ℓ < 30.
+
+## Test 2: CSFD − SFD vs an independent CIB (`cib_check.py`, `figures/cib_check.{txt,png}`)
+
+This checks CSFD − SFD against the Lenz, Doré & Lagache (2019) CIB, which unlike the CSFD LSS map is not reconstructed from galaxies. It has only been run at 857 GHz on the N_HI < 2.5e20 mask, over the photo footprint ∩ CSFD cosmology mask (fsky 0.14).
+- **r(CSFD − SFD, CIB)** is about −0.10 at ℓ < 32, −0.34 to −0.39 at ℓ = 32–92, and −0.50 to −0.58 at ℓ ≥ 92, so CSFD − SFD is CIB-dominated.
+  - The HI control gives r ≈ 0.01–0.09, as expected, since the Lenz CIB is HI-cleaned.
+- **r with the CIB at ℓ ≳ 90:** SFD 0.22–0.28, CSFD 0.15–0.19. CSFD removes about a third of SFD's CIB correlation.
+- **Euclid-style test:** the measured r(CSFD − SFD, κ) is 1.5–2.5× the CIB-route prediction r(D, CIB)·r(CIB, κ) at ℓ ≥ 90, and far larger at ℓ < 60. This fits with the CSFD correction itself containing galaxy-traced structure. Noise in the CIB map dilutes the prediction, so the low-ℓ numbers shouldn't be over-interpreted.
+- **Not done yet:** 545/353 GHz and the 857 GHz 4.0e20 mask. The Dataverse downloads (doi:10.7910/DVN/8A1SR3) came back as error pages, so those maps have to be downloaded by hand into `data/ext/lenz19_cib/<freq>/<mask>/`; `cib_check.py` picks them up automatically.
 
 ## Method notes
 

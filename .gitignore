@@ -9,3 +9,4 @@ tests/logs/
 slurm/logs/
 figures/**/*.npz
 *.tmp
+data/cib_nside256/
