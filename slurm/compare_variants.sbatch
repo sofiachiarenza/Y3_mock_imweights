@@ -22,5 +22,5 @@ if [ "$SAMPLE" = photo ]; then
     python -u compare_variants.py --sample photo --lensmap planck_pr4 --tracers BGS LRG1 LRG2 LRG3
 else
     python -u compare_variants.py --sample spec --lensmap act_dr6 --tracers BGS LRG1 LRG2 LRG3 QSO QSO1 QSO2
-    python -u compare_variants.py --sample spec --lensmap planck_pr4 --tracers LRG1 LRG2 LRG3 QSO
+    python -u compare_variants.py --sample spec --lensmap planck_pr4 --tracers BGS LRG1 LRG2 LRG3 QSO QSO1 QSO2
 fi

@@ -8,10 +8,10 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
-#SBATCH --array=0-43
+#SBATCH --array=0-55
 #SBATCH --output=slurm/logs/spec_%A_%a.out
 #SBATCH --error=slurm/logs/spec_%A_%a.out
-# Spec production: 11 (tracer, lensmap) combos x 4 chunks of 25 sims (hdu 1).
+# Spec production: 14 (tracer, lensmap) combos x 4 chunks of 25 sims (hdu 1).
 # Pilot timing (both variants): 45-133 s/mock, 11 GB peak -> <= ~1 h per task.
 # Submit from the repo root:  sbatch slurm/regress_spec.sbatch [--variants V1 V2 ...]
 # (--skip-existing appends only the variants missing from existing sidecars)
@@ -19,7 +19,8 @@ set -euo pipefail
 cd "$SLURM_SUBMIT_DIR"
 source slurm/_env.sh
 COMBOS=(BGS:act_dr6 LRG1:act_dr6 LRG2:act_dr6 LRG3:act_dr6 QSO:act_dr6 QSO1:act_dr6 QSO2:act_dr6
-        LRG1:planck_pr4 LRG2:planck_pr4 LRG3:planck_pr4 QSO:planck_pr4)
+        LRG1:planck_pr4 LRG2:planck_pr4 LRG3:planck_pr4 QSO:planck_pr4
+        BGS:planck_pr4 QSO1:planck_pr4 QSO2:planck_pr4)   # added 2026-10-27 (array 44-55)
 ID=$SLURM_ARRAY_TASK_ID
 C=${COMBOS[$(( ID / 4 ))]}
 T=${C%%:*}; L=${C##*:}

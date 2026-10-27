@@ -42,7 +42,7 @@ tail: 0.5
 spec:
   lensmaps:
     act_dr6: [BGS, LRG1, LRG2, LRG3, QSO, QSO1, QSO2]
-    planck_pr4: [LRG1, LRG2, LRG3, QSO]
+    planck_pr4: [BGS, LRG1, LRG2, LRG3, QSO, QSO1, QSO2]
   png_dr2_qso_weights: /global/cfs/cdirs/desicollab/users/schiarenza/PNG_DR2/scripts/output/imaging_weights_lognormal/QSO
   maps:
     # BGS: LSS globals.py default fit_maps (reproduces the official BGS_BRIGHT-21.35 WEIGHT_IMLIN_CLUS,
