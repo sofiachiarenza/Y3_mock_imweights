@@ -38,7 +38,7 @@ ala = types.ModuleType("alaeboss")
 ala.linear_regression, ala.produce_imweights = _lr, _pi
 sys.modules.update({"LSS": lss, "LSS.common_tools": lss_ct, "alaeboss": ala,
                     "alaeboss.linear_regression": _lr, "alaeboss.produce_imweights": _pi})
-sys.path.insert(0, os.path.join(os.path.dirname(ROOT), "Y3_AMR_nersc"))
+sys.path.insert(0, os.path.join(ROOT, "data", "inputs", "legacy"))  # copy of the old Y3_AMR_nersc/regress_photo_mocks.py
 import regress_photo_mocks as old  # noqa: E402
 
 import importlib.util  # noqa: E402
@@ -49,7 +49,7 @@ _spec.loader.exec_module(_new)
 fit_one = _new.fit_one  # new driver (same module name as the old one, so load by path)
 assert old.__file__ != _new.__file__
 
-OLD_PIXWEIGHT = os.path.join(os.path.dirname(ROOT), "Y3_AMR_nersc", "photo_outputs", "pixweight-1-dark-with-csfd.fits")
+OLD_PIXWEIGHT = os.path.join(ROOT, "data", "inputs", "legacy", "pixweight-1-dark-with-csfd.fits")
 
 
 def randoms_subset(path, n_sub, nblocks=200):

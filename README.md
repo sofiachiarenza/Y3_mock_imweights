@@ -140,7 +140,7 @@ Inputs and method:
 ## Method notes
 
 - **Compressed randoms.** `LinearRegressor` takes its outlier cuts and bin edges from the data only, and every template is constant within a pixel. So the randoms are reduced, with no approximation, to one row per nside-256 pixel (per z-bin for spec) carrying the summed weight: about 750M rows become about 360k.
-- **Validated against the old code.** `tests/test_photo_vs_old_code.py` runs the original `Y3_AMR_nersc/regress_photo_mocks.py` logic on raw randoms; the weights are identical (max difference 0).
+- **Validated against the old code.** `tests/test_photo_vs_old_code.py` runs the original `Y3_AMR_nersc/regress_photo_mocks.py` logic (Narval copy, with its old pixweight, in git-ignored `data/inputs/legacy/`) on raw randoms; the weights are identical (max difference 0).
 
 ## Running
 

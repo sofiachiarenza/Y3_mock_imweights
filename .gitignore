@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 data/ext/
 data/*.fits
+data/inputs/
 outputs/
 tests/logs/
 slurm/logs/
